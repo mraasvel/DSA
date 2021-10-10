@@ -1,0 +1,89 @@
+Tree Minimal Interface:
+
+	Types:
+
+		- iterator (RbIterator<T>)
+		- const_iterator (RbIterator<const T>)
+	
+	Constructors/Destructors
+
+		- Tree(const value_compare& comp);
+		- Tree(const Tree& from);
+		- ~Tree();
+		- Tree& operator=(const Tree& x);
+	
+	Iterators:
+
+		- iterator begin();
+		- const_iterator begin() const;
+		- iterator end();
+		- const_iterator end() const;
+
+	Capacity:
+
+		- size_type size() const;
+		- size_type max_size() const;
+	
+	Modifiers:
+
+		- iterator insert(const value_type& val);
+		- void erase(const value_type& val);
+		- void erase(iterator position);
+		- void swap(Tree& x);
+		- void clear();
+	
+	Observers:
+
+		- value_compare value_comp() const;
+	
+	Operations:
+
+		- iterator find(const value_type& val);
+		- const_iterator find(const value_type& val) const;
+		- size_type count(const value_type& val) const;
+		- iterator lower_bound(const value_type& k);
+		- const_iterator lower_bound(const value_type& k) const;
+		- ft::pair<iterator, iterator> equal_range(const value_type& val);
+		- ft::pair<const_iterator, const_iterator> equal_range(const value_type& val) const;
+
+Properties:
+
+	1. Each node is either red or black.
+	2. All NIL nodes are considered black.
+	3. A red node does not have a red child.
+	4. Every path from a given node to any of its descendant NIL nodes goes through the same number of black nodes.
+
+Insertion:
+
+	https://en.wikipedia.org/wiki/Red%E2%80%93black_tree#Insertion
+	
+	1. InsertBST(x)
+	2. FixProperty(x)
+
+	N = inserted node
+	P = parent
+	U = uncle
+	G = grandparent
+
+	New node is red by default, meaning there is a violation only if P is also red (property 3)
+	Look at U to determine what to do
+
+	If U is also red, we can color P/U black, and G red then there can be a property 3 violation for
+	G, so we repeat the process but with N = G
+
+	If U is black, then we want to rotate(G) so that P replaces G and we swap the colors of P and G
+	However if N is an inner node of G, we should first rotate(P) in the direction so that P becomes
+	the new N but now as an outer node
+
+
+Deletion:
+
+	https://en.wikipedia.org/wiki/Red%E2%80%93black_tree#Removal:_simple_cases
+
+	N = Node to be deleted
+	P = N's parent
+	S = N's sibling
+	C = close nephew (S's child in the same direction as N)
+	D = distant nephew (S's other child)
+
+	Complex case: N is black and it has only NIL children (guaranteed property 4 violation)
