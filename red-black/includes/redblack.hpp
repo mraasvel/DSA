@@ -259,7 +259,12 @@ private:
 
 	node_pointer newNode(const value_type& a, node_pointer parent) {
 		last_node = alloc.allocate(1);
-		alloc.construct(last_node, node_type(a, parent));
+		try {
+			alloc.construct(last_node, node_type(a, parent));	
+		} catch (...) {
+			alloc.deallocate(last_node, 1);
+			throw;
+		}
 		return last_node;
 	}
 
@@ -664,7 +669,12 @@ private:
 
 	node_pointer copyNode(node_pointer x, node_pointer parent) {
 		node_pointer y = alloc.allocate(1);
-		alloc.construct(y, *x);
+		try {
+			alloc.construct(y, *x);
+		} catch (...) {
+			alloc.deallocate(y, 1);
+			throw;
+		}
 		y->parent = parent;
 		return y;
 	}
@@ -672,7 +682,12 @@ private:
 /* End Node */
 	void initializeEnd() {
 		end_node = alloc.allocate(1);
-		alloc.construct(end_node, node_type());
+		try {
+			alloc.construct(end_node, node_type());
+		} catch (...) {
+			alloc.deallocate(end_node, 1);
+			throw;
+		}
 	}
 
 	void updateEnd() {
