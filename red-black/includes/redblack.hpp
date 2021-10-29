@@ -433,11 +433,18 @@ private:
 	void eraseNode(node_pointer x) {
 		if (isNull(x->left)) {
 			cutNodeLink(x, x->right);
-			if (isBlack(x) && !isNull(x->parent)) {
+			// if X is black and it's children are both NULL, then there's a property 4 violation
+			// Possibilities: x->right is NULL or x->right is RED
+			if (isRed(x->right)) {
+				x->right->turnBlack();
+			} else if (isBlack(x) && !isNull(x->parent)) {
 				eraseFixProperty(x->right, x->parent);
 			}
 		} else if (isNull(x->right)) {
 			cutNodeLink(x, x->left);
+			// X has to be black, because it cannot have one child as a red node
+			// Meaning that x->left has to be red in this case
+			// So we turn it black to preserve property 4
 			x->left->turnBlack();
 		} else {
 			node_pointer y = findMin(x->left);
@@ -472,7 +479,7 @@ private:
 	void eraseFixProperty(node_pointer x, node_pointer parent) {
 		do {
 			node_pointer sibling = (parent->left == x) ? parent->right : parent->left;
-			
+
 			if (eraseCaseOne(parent, sibling)) {
 				sibling->turnRed();
 				x = parent;
