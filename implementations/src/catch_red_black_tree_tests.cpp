@@ -178,6 +178,22 @@ TEST_CASE("RedBlackTree iterator end testing", "[RedBlackTree]") {
 	REQUIRE(*it == 42);
 }
 
+TEST_CASE("dereferencing iterator", "[RedBlackTree]") {
+	struct Compound {
+		Compound(int x = 0, int y = 0)
+		: x(x), y(y) {}
+		bool operator<(const Compound& rhs) const {
+			return x < rhs.x || (x == rhs.x && y < rhs.y);
+		}
+		int x, y;
+	};
+	RedBlackTree<Compound> s;
+	s.insert(Compound(2, 5));
+	const RedBlackTree<Compound>::iterator it = s.begin();
+	it->x = 5;
+	REQUIRE(s.begin()->x == 5);
+}
+
 // /* Capacity */
 
 TEST_CASE("RedBlackTree size", "[RedBlackTree]") {

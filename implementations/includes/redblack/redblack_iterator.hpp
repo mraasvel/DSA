@@ -67,20 +67,12 @@ public:
 	template <typename T1, typename T2>
 	friend bool operator==(const RedBlackIterator<T1>& lhs, const RedBlackIterator<T2>& rhs);
 
-	reference operator*() {
+	reference operator*() const {
 		return ptr->getValue();
 	}
 
-	const_reference operator*() const {
-		return ptr->getValue();
-	}
-
-	pointer operator->() {
-		return &(ptr->getValue());
-	}
-
-	const_pointer operator->() const {
-		return &(ptr->getValue());
+	pointer operator->() const {
+		return &(operator*());
 	}
 
 /* Bidirectional */
