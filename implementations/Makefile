@@ -19,7 +19,7 @@ HDF := $(shell find $(IDIR) -name "*.hpp" -type f)
 CC = clang++
 IFLAGS = -I$(IDIR)
 LFLAGS =
-CFLAGS = -Wall -Wextra -Werror -Wno-unused -Wno-unused-parameter -std=c++14 -pedantic
+CFLAGS = -Wall -Wextra -Werror -Wno-unused -Wno-unused-parameter -std=c++11 -pedantic
 
 ifeq ($(shell uname -s),Linux)
 	DFLAGS := -O0 -g -fsanitize=address -fsanitize=leak
@@ -36,12 +36,12 @@ RM = /bin/rm -f
 # Rules
 .PHONY: all
 all:
-	$(MAKE) -j4 $(NAME)
+	$(MAKE) -j $(NAME)
 
 # Compilation
 $(NAME): $(OBJ)
 	$(CC) -o $@ $(OBJ) $(CFLAGS) $(LFLAGS)
-$(OBJ): $(ODIR)/%.o: $(SDIR)/%.cpp
+$(OBJ): $(ODIR)/%.o: $(SDIR)/%.cpp Makefile
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS) $(IFLAGS)
 $(DDIR)/%.d: $(SDIR)/%.cpp

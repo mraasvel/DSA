@@ -1,7 +1,7 @@
 #pragma once
 
-#include "redblack.hpp"
-#include "redblack_iterator.hpp"
+#include "redblack/redblack.hpp"
+#include "redblack/redblack_iterator.hpp"
 #include <cassert>
 
 namespace Test {
