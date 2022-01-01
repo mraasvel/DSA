@@ -3,7 +3,7 @@
 #include <list>
 
 TEST_CASE("list constructor", "[list]") {
-	DataStructures::list<int> lst;
+	DataStructures::list<int, std::allocator<int>> lst((std::allocator<int>()));
 
 	REQUIRE(lst.size() == 0);
 	REQUIRE(lst.empty());

@@ -16,6 +16,7 @@ namespace DataStructures {
 
 template <class T, class Allocator = std::allocator<T> >
 class list {
+private:
 	struct ListNodeBase {
 		ListNodeBase()
 		: prev(nullptr), next(nullptr) {}
@@ -264,21 +265,21 @@ private:
 		resetSentinel();
 	}
 
-	void resetSentinel() {
+	void resetSentinel() noexcept {
 		start->next = start;
 		start->prev = start;
 	}
 
-	void destroySentinel() {
+	void destroySentinel() noexcept {
 		destroyBaseNode(end());
 	}
 
-	void destroyBaseNode(iterator it) {
+	void destroyBaseNode(iterator it) noexcept {
 		nodebase_allocator.destroy(it.base());
 		nodebase_allocator.deallocate(it.base(), 1);
 	}
 
-	void destroyNode(iterator it) {
+	void destroyNode(iterator it) noexcept {
 		Node* ptr = static_cast<Node*>(it.base());
 		node_allocator.destroy(ptr);
 		node_allocator.deallocate(ptr, 1);
