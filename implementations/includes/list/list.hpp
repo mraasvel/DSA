@@ -16,8 +16,6 @@ namespace DataStructures {
 
 template <class T, class Allocator = std::allocator<T> >
 class list {
-private:
-	template <typename V>
 	struct ListNodeBase {
 		ListNodeBase()
 		: prev(nullptr), next(nullptr) {}
@@ -25,99 +23,330 @@ private:
 		ListNodeBase* next;
 	};
 
-	template <typename V>
-	struct ListNode : public ListNodeBase<V> {
-		explicit ListNode(const V& value)
+	struct ListNode : public ListNodeBase {
+		explicit ListNode(const T& value)
 		: value(value) {}
-		V value;
+		T value;
 	};
 
-	template <typename V>
 	class ListIterator {
+	public:
+		using difference_type = std::ptrdiff_t;
+		using value_type = T;
+		using pointer = value_type*;
+		using reference = value_type&;
+		using iterator_category = std::bidirectional_iterator_tag;
 	private:
-		typedef V value_type;
-		typedef value_type& reference;
-		typedef const value_type& const_reference;
-		typedef value_type* pointer;
-		typedef const value_type* const_pointer;
-		typedef ListNode<V>* NodePointer;
-		typedef ListNodeBase<V>* BasePointer;
-		typedef ListNodeBase<const V>* ConstBasePointer;
-		typedef ListIterator<const V> const_iterator;
+		using NodePointer = ListNode*;
+		using BasePointer = ListNodeBase*;
 	public:
 		ListIterator()
-		: base(nullptr) {}
-		explicit ListIterator(BasePointer base)
-		: base(base) {}
+		: node(nullptr) {}
+		explicit ListIterator(BasePointer node)
+		: node(node) {}
 
 		ListIterator& operator++() {
-			base = base->next;
+			node = node->next;
 			return *this;
 		}
 
-		ListIterator& operator++(int) {
-			ListIterator copy(*this);
-			base = base->next;
+		ListIterator operator++(int) {
+			ListIterator copy = *this;
+			node = node->next;
 			return copy;
 		}
 
 		ListIterator& operator--() {
-			base = base->prev;
+			node = node->prev;
 			return *this;
 		}
 
-		ListIterator& operator--(int) {
-			ListIterator copy(*this);
-			base = base->prev;
+		ListIterator operator--(int) {
+			ListIterator copy = *this;
+			node = node->prev;
 			return copy;
 		}
 
 		reference operator*() const {
-			return reinterpret_cast<NodePointer>(base)->value;
+			return static_cast<NodePointer>(node)->value;
 		}
 
 		pointer operator->() const {
 			return &(operator*());
 		}
 
-		operator const_iterator() const {
-			return const_iterator(reinterpret_cast<ConstBasePointer>(base));
+		friend bool operator==(const ListIterator& a, const ListIterator& b) {
+			return a.node == b.node;
 		}
 
-		bool operator==(const ListIterator& rhs) const {
-			return base == rhs.base;
+		friend bool operator!=(const ListIterator& a, const ListIterator& b) {
+			return !(a == b);
 		}
 
-		bool operator!=(const ListIterator& rhs) const {
-			return !(*this == rhs);
+		BasePointer base() const {
+			return node;
 		}
 
 	private:
-		BasePointer base;
+		BasePointer node;
+	};
+
+	class ConstListIterator {
+	public:
+		using difference_type = std::ptrdiff_t;
+		using value_type = const T;
+		using pointer = const value_type*;
+		using reference = const value_type&;
+		using iterator_category = std::bidirectional_iterator_tag;
+	private:
+		using NodePointer = ListNode*;
+		using BasePointer = ListNodeBase*;
+	public:
+		ConstListIterator()
+		: node(nullptr) {}
+		explicit ConstListIterator(BasePointer node)
+		: node(node) {}
+		ConstListIterator(const ListIterator& rhs)
+		: node(rhs.base()) {}
+
+		ConstListIterator& operator++() {
+			node = node->next;
+			return *this;
+		}
+
+		ConstListIterator operator++(int) {
+			ConstListIterator copy = *this;
+			node = node->next;
+			return copy;
+		}
+
+		ConstListIterator& operator--() {
+			node = node->prev;
+			return *this;
+		}
+
+		ConstListIterator operator--(int) {
+			ConstListIterator copy = *this;
+			node = node->prev;
+			return copy;
+		}
+
+		reference operator*() const {
+			return static_cast<NodePointer>(node)->value;
+		}
+
+		pointer operator->() const {
+			return &(operator*());
+		}
+
+		friend bool operator==(const ConstListIterator& a, const ConstListIterator& b) {
+			return a.node == b.node;
+		}
+
+		friend bool operator!=(const ConstListIterator& a, const ConstListIterator& b) {
+			return !(a == b);
+		}
+
+		BasePointer base() const {
+			return node;
+		}
+
+	private:
+		BasePointer node;
 	};
 
 public:
-	typedef T value_type;
-	typedef Allocator allocator_type;
-	typedef std::size_t size_type;
-	typedef std::ptrdiff_t difference_type;
-	typedef value_type& reference;
-	typedef const value_type& const_reference;
-	typedef typename std::allocator_traits<allocator_type>::pointer pointer;
-	typedef typename std::allocator_traits<Allocator>::const_pointer const_pointer;
+	using value_type = T;
+	using allocator_type = Allocator;
+	using size_type = std::size_t;
+	using difference_type = std::ptrdiff_t;
+	using reference = value_type&;
+	using const_reference = const value_type&;
+	using pointer = typename std::allocator_traits<allocator_type>::pointer;
+	using const_pointer = typename std::allocator_traits<Allocator>::const_pointer;
 
-	typedef ListIterator<value_type> iterator;
-	typedef ListIterator<const value_type> const_iterator;
-	typedef std::reverse_iterator<iterator> reverse_iterator;
-	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+	using iterator = ListIterator;
+	using const_iterator = ConstListIterator;
+	using reverse_iterator = std::reverse_iterator<iterator>;
+	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
 private:
-	typedef ListNodeBase<value_type> NodeBase;
-	typedef ListNode<value_type> Node;
-	typedef typename allocator_type::template rebind<NodeBase>::other nodebase_allocator_type;
-	typedef typename allocator_type::template rebind<Node>::other node_allocator_type;
+	using NodeBase = ListNodeBase;
+	using Node = ListNode;
+	using nodebase_allocator_type = typename allocator_type::template rebind<NodeBase>::other;
+	using node_allocator_type = typename allocator_type::template rebind<Node>::other;
 public:
+/*
+Constructor
+*/
+	list() {
+		init();
+	}
+
+	explicit list(const allocator_type& alloc)
+	: list() {}
+
+	list(size_type count, const value_type& value, const allocator_type& alloc);
+	explicit list(size_type count);
+	template <class InputIt>
+	list(InputIt first, InputIt last, const allocator_type& alloc = allocator_type());
+	list(const list& other);
+	list(const list& other, const allocator_type& alloc);
+	list(list&& other);
+	list(list&& other, const allocator_type& alloc);
+	list(std::initializer_list<T> init, const allocator_type& alloc = allocator_type());
+/*
+Destructor
+*/
+	~list() {
+		if (start == nullptr) {
+			return;
+		}
+		clear();
+		destroySentinel();
+	}
+/*
+Assignment
+*/
+	list& operator=(const list& other);
+	list& operator=(list&& other);
+	list& operator=(std::initializer_list<T> ilist);
+
+	void assign(size_type count, const T& value);
+	template <class InputIt>
+	void assign(InputIt first, InputIt last);
+	void assign(std::initializer_list<T> ilist);
+
+	allocator_type get_allocator() const noexcept {
+		return allocator_type();
+	}
+
+/*
+Element Access
+*/
+	reference front() {
+		return *begin();
+	}
+
+	const_reference front() const {
+		return *cbegin();
+	}
+
+	reference back() {
+		return *std::prev(begin());
+	}
+
+	const_reference back() const {
+		return *std::prev(cbegin());
+	}
+/*
+Iterating
+*/
+	iterator begin() noexcept {
+		return iterator(start);
+	}
+
+	const_iterator begin() const noexcept {
+		return const_iterator(start);
+	}
+
+	const_iterator cbegin() const noexcept {
+		return const_iterator(start);
+	}
+
+	iterator end() noexcept {
+		return iterator(std::prev(begin()));
+	}
+
+	const_iterator end() const noexcept {
+		return const_iterator(std::prev(begin()));
+	}
+
+	const_iterator cend() const noexcept {
+		return const_iterator(std::prev(begin()));
+	}
+
+	reverse_iterator rbegin() noexcept {
+		return reverse_iterator(end());
+	}
+
+	const_reverse_iterator rbegin() const noexcept {
+		return const_reverse_iterator(end());
+	}
+
+	const_reverse_iterator crbegin() const noexcept {
+		return const_reverse_iterator(end());
+	}
+
+	reverse_iterator rend() noexcept {
+		return reverse_iterator(begin());
+	}
+
+	const_reverse_iterator rend() const noexcept {
+		return const_reverse_iterator(begin());
+	}
+
+	const_reverse_iterator crend() const noexcept {
+		return const_reverse_iterator(begin());
+	}
+/*
+Capacity
+*/
+	bool empty() const noexcept {
+		return cbegin() == cend();
+	}
+
+	size_type size() const noexcept {
+		return _size;
+	}
+
+	size_type max_size() const noexcept {
+		return node_allocator.max_size();
+	}
+/*
+Modifiers
+*/
+	void clear() noexcept {
+		iterator it = begin();
+		while (it != end()) {
+			destroyNode(it++);
+		}
+		resetSentinel();
+	}
+
 private:
+	void init() {
+		_size = 0;
+		start = nullptr;
+		start = nodebase_allocator.allocate(1);
+		resetSentinel();
+	}
+
+	void resetSentinel() {
+		start->next = start;
+		start->prev = start;
+	}
+
+	void destroySentinel() {
+		destroyBaseNode(end());
+	}
+
+	void destroyBaseNode(iterator it) {
+		nodebase_allocator.destroy(it.base());
+		nodebase_allocator.deallocate(it.base(), 1);
+	}
+
+	void destroyNode(iterator it) {
+		Node* ptr = static_cast<Node*>(it.base());
+		node_allocator.destroy(ptr);
+		node_allocator.deallocate(ptr, 1);
+	}
+
+private:
+	size_type _size;
+	NodeBase* start;
+	nodebase_allocator_type nodebase_allocator;
+	node_allocator_type node_allocator;
 };
 
 }
