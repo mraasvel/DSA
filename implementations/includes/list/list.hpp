@@ -29,16 +29,18 @@ class list {
 		T value;
 	};
 
+	template <typename U>
 	class ListIterator {
 	public:
 		using difference_type = std::ptrdiff_t;
-		using value_type = T;
+		using value_type = U;
 		using pointer = value_type*;
 		using reference = value_type&;
 		using iterator_category = std::bidirectional_iterator_tag;
 	private:
 		using NodePointer = ListNode*;
 		using BasePointer = ListNodeBase*;
+		using const_iterator = ListIterator<const value_type>;
 	public:
 		ListIterator()
 		: node(nullptr) {}
@@ -83,68 +85,8 @@ class list {
 			return !(a == b);
 		}
 
-		BasePointer base() const {
-			return node;
-		}
-
-	private:
-		BasePointer node;
-	};
-
-	class ConstListIterator {
-	public:
-		using difference_type = std::ptrdiff_t;
-		using value_type = const T;
-		using pointer = const value_type*;
-		using reference = const value_type&;
-		using iterator_category = std::bidirectional_iterator_tag;
-	private:
-		using NodePointer = ListNode*;
-		using BasePointer = ListNodeBase*;
-	public:
-		ConstListIterator()
-		: node(nullptr) {}
-		explicit ConstListIterator(BasePointer node)
-		: node(node) {}
-		ConstListIterator(const ListIterator& rhs)
-		: node(rhs.base()) {}
-
-		ConstListIterator& operator++() {
-			node = node->next;
-			return *this;
-		}
-
-		ConstListIterator operator++(int) {
-			ConstListIterator copy = *this;
-			node = node->next;
-			return copy;
-		}
-
-		ConstListIterator& operator--() {
-			node = node->prev;
-			return *this;
-		}
-
-		ConstListIterator operator--(int) {
-			ConstListIterator copy = *this;
-			node = node->prev;
-			return copy;
-		}
-
-		reference operator*() const {
-			return static_cast<NodePointer>(node)->value;
-		}
-
-		pointer operator->() const {
-			return &(operator*());
-		}
-
-		friend bool operator==(const ConstListIterator& a, const ConstListIterator& b) {
-			return a.node == b.node;
-		}
-
-		friend bool operator!=(const ConstListIterator& a, const ConstListIterator& b) {
-			return !(a == b);
+		operator const_iterator() const {
+			return const_iterator(node);
 		}
 
 		BasePointer base() const {
@@ -165,8 +107,8 @@ public:
 	using pointer = typename std::allocator_traits<allocator_type>::pointer;
 	using const_pointer = typename std::allocator_traits<Allocator>::const_pointer;
 
-	using iterator = ListIterator;
-	using const_iterator = ConstListIterator;
+	using iterator = ListIterator<value_type>;
+	using const_iterator = ListIterator<const value_type>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
