@@ -2,6 +2,7 @@
 # define LIST_HPP
 
 #include <memory> // std::allocator
+#include <iostream> // REMOVE
 
 /*
 Class Structure:
@@ -129,36 +130,90 @@ Constructor
 	explicit list(const allocator_type& alloc)
 	: list() {}
 
-	list(size_type count, const value_type& value, const allocator_type& alloc);
-	explicit list(size_type count);
+	list(size_type count, const value_type& value, const allocator_type& alloc = allocator_type())
+	: list(alloc) {
+		(void)alloc;
+		insert(cend(), count, value);
+	}
+
+	explicit list(size_type count)
+	: list() {
+		insert(cend(), count, value_type());
+	}
+
+	// TODO: SFINAE
 	template <class InputIt>
-	list(InputIt first, InputIt last, const allocator_type& alloc = allocator_type());
-	list(const list& other);
-	list(const list& other, const allocator_type& alloc);
-	list(list&& other);
-	list(list&& other, const allocator_type& alloc);
-	list(std::initializer_list<T> init, const allocator_type& alloc = allocator_type());
+	list(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
+	: list(alloc) {
+		insert(cend(), first, last);
+	}
+
+	list(const list& other)
+	: list() {
+		*this = other;
+	}
+
+	list(const list& other, const allocator_type& alloc)
+	: list(alloc) {}
+
+	list(list&& other)
+	: start(nullptr), _size(0) {
+		std::swap(start, other.start);
+		std::swap(_size, other._size);
+	}
+
+	list(list&& other, const allocator_type& alloc)
+	: list(other) {}
+
+	list(std::initializer_list<T> init, const allocator_type& alloc = allocator_type())
+	: list(alloc) {
+		insert(cend(), init);
+	}
+
 /*
 Destructor
 */
 	~list() {
-		if (start == nullptr) {
-			return;
-		}
-		clear();
-		destroySentinel();
+		fullClear();
 	}
 /*
 Assignment
 */
-	list& operator=(const list& other);
-	list& operator=(list&& other);
-	list& operator=(std::initializer_list<T> ilist);
+	list& operator=(const list& other) {
+		if (this == &other) {
+			return *this;
+		}
+		assign(other.begin(), other.end());
+		return *this;
+	}
 
-	void assign(size_type count, const T& value);
+	list& operator=(list&& other) {
+		fullClear();
+		std::swap(start, other.start);
+		std::swap(_size, other.size);
+		return *this;
+	}
+
+	list& operator=(std::initializer_list<value_type> ilist) {
+		assign(ilist);
+		return *this;
+	}
+
+	void assign(size_type count, const value_type& value) {
+		clear();
+		insert(cend(), count, value);
+	}
+
+	// TODO: SFINAE
 	template <class InputIt>
-	void assign(InputIt first, InputIt last);
-	void assign(std::initializer_list<T> ilist);
+	void assign(InputIt first, InputIt last) {
+		clear();
+		insert(cend(), first, last);
+	}
+
+	void assign(std::initializer_list<value_type> ilist) {
+		assign(ilist.begin(), ilist.end());
+	}
 
 	allocator_type get_allocator() const noexcept {
 		return allocator_type();
@@ -249,25 +304,102 @@ Capacity
 /*
 Modifiers
 */
+	// TODO: replace with erase() so that the loop invariant is not broken
 	void clear() noexcept {
 		iterator it = begin();
-		while (it != end()) {
+		iterator ite = end();
+		while (it != ite) {
 			destroyNode(it++);
 		}
+		_size = 0;
+		start = ite.base();
 		resetSentinel();
+	}
+
+	iterator insert(const_iterator pos, const value_type& value) {
+		NodeBase* x = pos.base();
+		NodeBase* entry = newNode(value, x->prev, x);
+		x->prev->next = entry;
+		x->prev = entry;
+		if (pos == begin()) {
+			start = entry;
+		}
+		_size += 1;
+		return iterator(entry);
+	}
+
+	iterator insert(const_iterator pos, value_type&& value) {
+		return insert(pos, value);
+	}
+
+	iterator insert(const_iterator pos, size_type count, const value_type& value) {
+		iterator it = iterator(pos.base());
+		while (count-- > 0) {
+			it = insert(it, value);
+		}
+		return it;
+	}
+
+	// TODO: SFINAE
+	// template <class InputIt>
+	// iterator insert(const_iterator pos, InputIt first, InputIt last) {
+	// 	if (first == last) {
+	// 		return iterator(pos.base());
+	// 	}
+	// 	iterator it = insert(pos, *first++);
+	// 	while (first != last) {
+	// 		insert(pos, *first);
+	// 		first++;
+	// 	}
+	// 	return it;
+	// }
+
+	iterator insert(const_iterator pos, std::initializer_list<value_type> ilist) {
+		iterator it = iterator(pos.base());
+		for (const value_type& value : ilist) {
+			if (it == pos) {
+				it = insert(pos, value);
+			} else {
+				insert(pos, value);
+			}
+		}
+		return it;
 	}
 
 private:
 	void init() {
 		_size = 0;
 		start = nullptr;
-		start = nodebase_allocator.allocate(1);
+		start = newNodeBase();
 		resetSentinel();
 	}
 
 	void resetSentinel() noexcept {
 		start->next = start;
 		start->prev = start;
+	}
+
+	NodeBase* newNode(const value_type& value, NodeBase* prev = nullptr, NodeBase* next = nullptr) {
+		Node* node = node_allocator.allocate(1);
+		node_allocator.construct(node, value);
+		node->prev = prev;
+		node->next = next;
+		return node;
+	}
+
+	NodeBase* newNodeBase() {
+		NodeBase* x = nodebase_allocator.allocate(1);
+		nodebase_allocator.construct(x);
+		return x;
+	}
+
+	void fullClear() noexcept {
+		if (start == nullptr) {
+			return;
+		}
+		clear();
+		destroySentinel();
+		start = nullptr;
 	}
 
 	void destroySentinel() noexcept {
