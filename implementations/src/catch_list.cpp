@@ -1,6 +1,16 @@
-#include "catch.hpp"
 #include "list/list.hpp"
+#include "is_iterator.hpp"
 #include <list>
+#include <catch2/catch.hpp>
+
+TEST_CASE("SFINAE", "[sfinae]") {
+	REQUIRE(DataStructures::IsIterator<int*>::value == true);
+	REQUIRE(DataStructures::IsIterator<const int*>::value == true);
+	REQUIRE(DataStructures::IsIterator<int* const>::value == true);
+	REQUIRE(DataStructures::IsIterator<const int* const>::value == true);
+	REQUIRE(DataStructures::IsIterator<volatile int*>::value == true);
+	REQUIRE(DataStructures::IsIterator<int>::value == false);
+}
 
 TEST_CASE("list constructor", "[list]") {
 	DataStructures::list<int, std::allocator<int>> lst((std::allocator<int>()));
@@ -9,6 +19,27 @@ TEST_CASE("list constructor", "[list]") {
 	REQUIRE(lst.empty());
 	REQUIRE(lst.begin() == lst.end());
 	REQUIRE(lst.rbegin() == lst.rend());
+}
+
+TEST_CASE("list fill constructor", "[list]") {
+	DataStructures::list<int> lst(100, 42);
+	REQUIRE(lst.size() == 100);
+	DataStructures::list<int> lst2(1500);
+	REQUIRE(lst2.size() == 1500);
+}
+
+TEST_CASE("list range constructor", "[list]") {
+	const int table[] = {1, 2, 3, 4, 5};
+	const size_t size = sizeof(table) / sizeof(table[0]);
+
+	DataStructures::list<int> lst(table, (table + size));
+	REQUIRE(lst.size() == size);
+	auto it = lst.begin();
+	for (size_t i = 0; i < size; i++) {
+		REQUIRE(*it++ == table[i]);
+	}
+
+	std::list<int> stdlst(table, table + size);
 }
 
 /*

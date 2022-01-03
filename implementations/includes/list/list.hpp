@@ -1,8 +1,8 @@
 #ifndef LIST_HPP
 # define LIST_HPP
 
+#include "is_iterator.hpp"
 #include <memory> // std::allocator
-#include <iostream> // REMOVE
 
 /*
 Class Structure:
@@ -17,6 +17,8 @@ namespace DataStructures {
 
 template <class T, class Allocator = std::allocator<T> >
 class list {
+/* Template Argument Validation */
+	static_assert(std::is_same<T, typename Allocator::value_type>::value, "invalid allocator type");
 private:
 	struct ListNodeBase {
 		ListNodeBase()
@@ -141,13 +143,14 @@ Constructor
 		insert(cend(), count, value_type());
 	}
 
-	// TODO: SFINAE
-	template <class InputIt>
+	template <class InputIt,
+		typename = RequireInputIterator<InputIt>>
 	list(InputIt first, InputIt last, const allocator_type& alloc = allocator_type())
 	: list(alloc) {
 		insert(cend(), first, last);
 	}
 
+	// Obtain allocator in a different way
 	list(const list& other)
 	: list() {
 		*this = other;
@@ -156,12 +159,14 @@ Constructor
 	list(const list& other, const allocator_type& alloc)
 	: list(alloc) {}
 
+	// TODO: implement using move semantics (std::move?, move allocator as well)
 	list(list&& other)
 	: start(nullptr), _size(0) {
 		std::swap(start, other.start);
 		std::swap(_size, other._size);
 	}
 
+	// TODO: implement using move semantics, should be linear if alloc != other.alloc
 	list(list&& other, const allocator_type& alloc)
 	: list(other) {}
 
@@ -204,8 +209,8 @@ Assignment
 		insert(cend(), count, value);
 	}
 
-	// TODO: SFINAE
-	template <class InputIt>
+	template <class InputIt,
+		typename = RequireInputIterator<InputIt>>
 	void assign(InputIt first, InputIt last) {
 		clear();
 		insert(cend(), first, last);
@@ -340,19 +345,19 @@ Modifiers
 		return it;
 	}
 
-	// TODO: SFINAE
-	// template <class InputIt>
-	// iterator insert(const_iterator pos, InputIt first, InputIt last) {
-	// 	if (first == last) {
-	// 		return iterator(pos.base());
-	// 	}
-	// 	iterator it = insert(pos, *first++);
-	// 	while (first != last) {
-	// 		insert(pos, *first);
-	// 		first++;
-	// 	}
-	// 	return it;
-	// }
+	template <class InputIt,
+		typename = RequireInputIterator<InputIt>>
+	iterator insert(const_iterator pos, InputIt first, InputIt last) {
+		if (first == last) {
+			return iterator(pos.base());
+		}
+		iterator it = insert(pos, *first++);
+		while (first != last) {
+			insert(pos, *first);
+			first++;
+		}
+		return it;
+	}
 
 	iterator insert(const_iterator pos, std::initializer_list<value_type> ilist) {
 		iterator it = iterator(pos.base());
@@ -381,16 +386,24 @@ private:
 
 	NodeBase* newNode(const value_type& value, NodeBase* prev = nullptr, NodeBase* next = nullptr) {
 		Node* node = node_allocator.allocate(1);
-		node_allocator.construct(node, value);
+		try {
+			node_allocator.construct(node, value);
+		} catch (...) {
+			node_allocator.deallocate(node, 1);
+		}
 		node->prev = prev;
 		node->next = next;
 		return node;
 	}
 
 	NodeBase* newNodeBase() {
-		NodeBase* x = nodebase_allocator.allocate(1);
-		nodebase_allocator.construct(x);
-		return x;
+		NodeBase* node = nodebase_allocator.allocate(1);
+		try {
+			nodebase_allocator.construct(node);
+		} catch (...) {
+			nodebase_allocator.deallocate(node, 1);
+		}
+		return node;
 	}
 
 	void fullClear() noexcept {

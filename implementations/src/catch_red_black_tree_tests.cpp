@@ -1,6 +1,6 @@
 #include "redblack/redblack.hpp"
 #include "valid_rb_test.hpp"
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 /* Constructors */
 
