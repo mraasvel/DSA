@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <iterator>
 
-namespace DataStructures {
+namespace DS {
 
 	namespace Detail {
 
@@ -43,7 +43,8 @@ This is how STL checks it: only validates that the category is valid
 */
 template<typename InputIterator>
 using RequireInputIterator = typename std::enable_if<std::is_convertible<
-				typename std::iterator_traits<InputIterator>::iterator_category, std::input_iterator_tag>::value>::type;
+				typename std::iterator_traits<InputIterator>::iterator_category,
+				std::input_iterator_tag>::value>::type;
 
 
 template <typename Iterator>

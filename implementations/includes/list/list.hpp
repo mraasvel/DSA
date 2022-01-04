@@ -13,12 +13,12 @@ Class Structure:
 
 */
 
-namespace DataStructures {
+namespace DS {
 
 template <class T, class Allocator = std::allocator<T> >
 class list {
 /* Template Argument Validation */
-	static_assert(std::is_same<T, typename Allocator::value_type>::value, "invalid allocator type");
+	static_assert(std::is_same<T, typename Allocator::value_type>::value, "allocator requirement violation");
 private:
 	struct ListNodeBase {
 		ListNodeBase()
@@ -28,8 +28,10 @@ private:
 	};
 
 	struct ListNode : public ListNodeBase {
+		ListNode()
+		: ListNodeBase() {}
 		explicit ListNode(const T& value)
-		: value(value) {}
+		: ListNodeBase(), value(value) {}
 		T value;
 	};
 
@@ -123,24 +125,25 @@ private:
 	using node_allocator_type = typename allocator_type::template rebind<Node>::other;
 public:
 /*
-Constructor
-*/
+Constructors */
+
 	list() {
 		init();
 	}
 
 	explicit list(const allocator_type& alloc)
-	: list() {}
+	: value_allocator(alloc) {
+		init();
+	}
 
 	list(size_type count, const value_type& value, const allocator_type& alloc = allocator_type())
 	: list(alloc) {
-		(void)alloc;
 		insert(cend(), count, value);
 	}
 
 	explicit list(size_type count)
 	: list() {
-		insert(cend(), count, value_type());
+		insert(cend(), count);
 	}
 
 	template <class InputIt,
@@ -150,25 +153,35 @@ Constructor
 		insert(cend(), first, last);
 	}
 
-	// Obtain allocator in a different way
 	list(const list& other)
-	: list() {
-		*this = other;
-	}
+	: list(other, std::allocator_traits<allocator_type>::select_on_container_copy_construction(other.get_allocator())) {}
 
 	list(const list& other, const allocator_type& alloc)
-	: list(alloc) {}
+	: value_allocator(alloc) {
+		init();
+		insert(cend(), other.begin(), other.end());
+	}
 
-	// TODO: implement using move semantics (std::move?, move allocator as well)
+	// TODO: call swap function
 	list(list&& other)
-	: start(nullptr), _size(0) {
+	: _size(0), start(nullptr), value_allocator(std::move(other.value_allocator)) {
 		std::swap(start, other.start);
 		std::swap(_size, other._size);
 	}
 
-	// TODO: implement using move semantics, should be linear if alloc != other.alloc
+	// TODO: call swap function
+	// TODO: SFINAE to check allocator equality: so that copy constructor is not necessary (insert is not instantiated)
 	list(list&& other, const allocator_type& alloc)
-	: list(other) {}
+	: _size(0), start(nullptr) {
+		if (alloc != other.get_allocator()) {
+			init();
+			insert(cend(), other.begin(), other.end());
+		} else {
+			std::swap(start, other.start);
+			std::swap(_size, other._size);
+		}
+
+	}
 
 	list(std::initializer_list<T> init, const allocator_type& alloc = allocator_type())
 	: list(alloc) {
@@ -176,17 +189,26 @@ Constructor
 	}
 
 /*
-Destructor
-*/
+Destructor */
+
 	~list() {
 		fullClear();
 	}
 /*
-Assignment
-*/
+Assignment */
+
+	// TODO: use old allocator to clear memory, new allocator to assign
 	list& operator=(const list& other) {
 		if (this == &other) {
 			return *this;
+		}
+		if (std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value) {
+			if (value_allocator != other.value_allocator) {
+				clear();
+			}
+			value_allocator = other.value_allocator;
+			node_allocator = other.node_allocator;
+			nodebase_allocator = other.nodebase_allocator;
 		}
 		assign(other.begin(), other.end());
 		return *this;
@@ -221,12 +243,12 @@ Assignment
 	}
 
 	allocator_type get_allocator() const noexcept {
-		return allocator_type();
+		return value_allocator;
 	}
 
 /*
-Element Access
-*/
+Element Access */
+
 	reference front() {
 		return *begin();
 	}
@@ -243,8 +265,8 @@ Element Access
 		return *std::prev(cbegin());
 	}
 /*
-Iterating
-*/
+Iterating */
+
 	iterator begin() noexcept {
 		return iterator(start);
 	}
@@ -293,8 +315,8 @@ Iterating
 		return const_reverse_iterator(begin());
 	}
 /*
-Capacity
-*/
+Capacity */
+
 	bool empty() const noexcept {
 		return cbegin() == cend();
 	}
@@ -307,8 +329,8 @@ Capacity
 		return node_allocator.max_size();
 	}
 /*
-Modifiers
-*/
+Modifiers */
+
 	// TODO: replace with erase() so that the loop invariant is not broken
 	void clear() noexcept {
 		iterator it = begin();
@@ -322,14 +344,8 @@ Modifiers
 	}
 
 	iterator insert(const_iterator pos, const value_type& value) {
-		NodeBase* x = pos.base();
-		NodeBase* entry = newNode(value, x->prev, x);
-		x->prev->next = entry;
-		x->prev = entry;
-		if (pos == begin()) {
-			start = entry;
-		}
-		_size += 1;
+		NodeBase* entry = newNode(value);
+		insertNode(pos, entry);
 		return iterator(entry);
 	}
 
@@ -372,6 +388,9 @@ Modifiers
 	}
 
 private:
+/*
+Allocation */
+
 	void init() {
 		_size = 0;
 		start = nullptr;
@@ -384,15 +403,23 @@ private:
 		start->prev = start;
 	}
 
-	NodeBase* newNode(const value_type& value, NodeBase* prev = nullptr, NodeBase* next = nullptr) {
+	NodeBase* newNode(const value_type& value) {
 		Node* node = node_allocator.allocate(1);
 		try {
 			node_allocator.construct(node, value);
 		} catch (...) {
 			node_allocator.deallocate(node, 1);
 		}
-		node->prev = prev;
-		node->next = next;
+		return node;
+	}
+
+	NodeBase* newDefaultNode() {
+		Node* node = node_allocator.allocate(1);
+		try {
+			node_allocator.construct(node);
+		} catch(...) {
+			node_allocator.deallocate(node, 1);
+		}
 		return node;
 	}
 
@@ -405,7 +432,33 @@ private:
 		}
 		return node;
 	}
+/*
+Modification */
 
+	iterator insert(const_iterator pos, size_type count) {
+		iterator it = iterator(pos.base());
+		while (count-- > 0) {
+			NodeBase* node = newDefaultNode();
+			it = insertNode(it, node);
+		}
+		return it;
+	}
+
+	iterator insertNode(const_iterator pos, NodeBase* node) {
+		NodeBase* next = pos.base();
+		node->prev = next->prev;
+		node->next = next;
+		next->prev->next = node;
+		next->prev = node;
+		if (pos == begin()) {
+			start = node;
+		}
+		_size += 1;
+		return iterator(node);
+	}
+
+/*
+Destruction */
 	void fullClear() noexcept {
 		if (start == nullptr) {
 			return;
@@ -433,6 +486,7 @@ private:
 private:
 	size_type _size;
 	NodeBase* start;
+	allocator_type value_allocator;
 	nodebase_allocator_type nodebase_allocator;
 	node_allocator_type node_allocator;
 };

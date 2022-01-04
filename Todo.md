@@ -1,6 +1,7 @@
 # Todo
 
 - Linked list implementation
+	- Go through functions/methods in order: read specification more clearly, and apply missing requirements
 	- Exception and complexity condition specified for each function, am I following the requirement?
 	- Catch tests for all functions made so far
 - BST implementations and balanced variants using inheritance
