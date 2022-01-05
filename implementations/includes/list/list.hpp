@@ -3,6 +3,7 @@
 
 #include "is_iterator.hpp"
 #include <memory> // std::allocator
+#include <iostream> // REMOVE
 
 /*
 Class Structure:
@@ -143,7 +144,7 @@ Constructors */
 
 	explicit list(size_type count)
 	: list() {
-		insert(cend(), count);
+		insertDefault(cend(), count);
 	}
 
 	template <class InputIt,
@@ -172,9 +173,10 @@ Constructors */
 	// TODO: call swap function
 	// TODO: SFINAE to check allocator equality: so that copy constructor is not necessary (insert is not instantiated)
 	list(list&& other, const allocator_type& alloc)
-	: _size(0), start(nullptr) {
+	: _size(0), start(nullptr), value_allocator(alloc) {
 		if (alloc != other.get_allocator()) {
 			init();
+			// TODO: move_iterator
 			insert(cend(), other.begin(), other.end());
 		} else {
 			std::swap(start, other.start);
@@ -195,29 +197,51 @@ Destructor */
 		fullClear();
 	}
 /*
-Assignment */
+Assignment, Copy Assignment Operators */
 
-	// TODO: use old allocator to clear memory, new allocator to assign
+	/*
+	If std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value is true,
+	the allocator of *this is replaced by a copy of that of other.
+
+	If the allocator of *this after assignment would compare unequal to its old value,
+	the old allocator is used to deallocate the memory,
+	then the new allocator is used to allocate it before copying the elements.
+
+	Otherwise, the memory owned by *this may be reused when possible.
+	In any case, the elements originally belong to *this may be either destroyed or replaced by element-wise copy-assignment. */
 	list& operator=(const list& other) {
 		if (this == &other) {
 			return *this;
 		}
 		if (std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value) {
-			if (value_allocator != other.value_allocator) {
-				clear();
-			}
-			value_allocator = other.value_allocator;
-			node_allocator = other.node_allocator;
-			nodebase_allocator = other.nodebase_allocator;
+			propogateAllocatorsOnCopy(other);
 		}
-		assign(other.begin(), other.end());
+		assignReuseMem(other);
 		return *this;
 	}
 
+	/*
+	If std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value is true,
+	the allocator of *this is replaced by a copy of that of other.
+
+	If it is false and the allocators of *this and other do not compare equal,
+	*this cannot take ownership of the memory owned by other and must move-assign each element individually,
+	allocating additional memory using its own allocator as needed.
+
+	In any case, all elements originally belong to
+	*this are either destroyed or replaced by element-wise move-assignment. */
 	list& operator=(list&& other) {
-		fullClear();
+		if (std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value) {
+			fullClear();
+			propogateAllocators(other);
+		} else if (!equalAllocators(other)) {
+			init();
+			assignReuseMem(other);
+			return *this;
+		}
+		// TODO: call swap function
 		std::swap(start, other.start);
-		std::swap(_size, other.size);
+		std::swap(_size, other._size);
 		return *this;
 	}
 
@@ -227,19 +251,17 @@ Assignment */
 	}
 
 	void assign(size_type count, const value_type& value) {
-		clear();
-		insert(cend(), count, value);
+		assignReuseMem(count, value);
 	}
 
 	template <class InputIt,
 		typename = RequireInputIterator<InputIt>>
 	void assign(InputIt first, InputIt last) {
-		clear();
-		insert(cend(), first, last);
+		assignReuseMem(first, last);
 	}
 
 	void assign(std::initializer_list<value_type> ilist) {
-		assign(ilist.begin(), ilist.end());
+		assignReuseMem(ilist.begin(), ilist.end());
 	}
 
 	allocator_type get_allocator() const noexcept {
@@ -331,20 +353,12 @@ Capacity */
 /*
 Modifiers */
 
-	// TODO: replace with erase() so that the loop invariant is not broken
 	void clear() noexcept {
-		iterator it = begin();
-		iterator ite = end();
-		while (it != ite) {
-			destroyNode(it++);
-		}
-		_size = 0;
-		start = ite.base();
-		resetSentinel();
+		erase(begin(), end());
 	}
 
 	iterator insert(const_iterator pos, const value_type& value) {
-		NodeBase* entry = newNode(value);
+		NodeBase* entry {newNode(value)};
 		insertNode(pos, entry);
 		return iterator(entry);
 	}
@@ -354,7 +368,7 @@ Modifiers */
 	}
 
 	iterator insert(const_iterator pos, size_type count, const value_type& value) {
-		iterator it = iterator(pos.base());
+		iterator it {pos.base()};
 		while (count-- > 0) {
 			it = insert(it, value);
 		}
@@ -367,7 +381,7 @@ Modifiers */
 		if (first == last) {
 			return iterator(pos.base());
 		}
-		iterator it = insert(pos, *first++);
+		iterator it {insert(pos, *first++)};
 		while (first != last) {
 			insert(pos, *first);
 			first++;
@@ -376,7 +390,7 @@ Modifiers */
 	}
 
 	iterator insert(const_iterator pos, std::initializer_list<value_type> ilist) {
-		iterator it = iterator(pos.base());
+		iterator it {pos.base()};
 		for (const value_type& value : ilist) {
 			if (it == pos) {
 				it = insert(pos, value);
@@ -385,6 +399,32 @@ Modifiers */
 			}
 		}
 		return it;
+	}
+
+	template <class... Args>
+	iterator emplace(const_iterator pos, Args&&... args);
+
+	/*
+	1. Cut link
+	2. Save previous node
+	3. Destroy node */
+	iterator erase(const_iterator pos) {
+		NodeBase* next {pos.base()->next};
+		next->prev = next->prev->prev;
+		next->prev->next = next;
+		if (pos == begin()) {
+			start = next;
+		}
+		_size -= 1;
+		destroyNode(iterator(pos.base()));
+		return iterator(next);
+	}
+
+	iterator erase(const_iterator first, const_iterator last) {
+		while (first != last) {
+			first = erase(first);
+		}
+		return iterator(first.base());
 	}
 
 private:
@@ -404,7 +444,7 @@ Allocation */
 	}
 
 	NodeBase* newNode(const value_type& value) {
-		Node* node = node_allocator.allocate(1);
+		Node* node {node_allocator.allocate(1)};
 		try {
 			node_allocator.construct(node, value);
 		} catch (...) {
@@ -414,7 +454,7 @@ Allocation */
 	}
 
 	NodeBase* newDefaultNode() {
-		Node* node = node_allocator.allocate(1);
+		Node* node {node_allocator.allocate(1)};
 		try {
 			node_allocator.construct(node);
 		} catch(...) {
@@ -424,7 +464,7 @@ Allocation */
 	}
 
 	NodeBase* newNodeBase() {
-		NodeBase* node = nodebase_allocator.allocate(1);
+		NodeBase* node {nodebase_allocator.allocate(1)};
 		try {
 			nodebase_allocator.construct(node);
 		} catch (...) {
@@ -432,20 +472,86 @@ Allocation */
 		}
 		return node;
 	}
+
+/*
+Assignation */
+
+	bool equalAllocators(const list& other) {
+		return value_allocator == other.value_allocator
+			&& node_allocator == other.node_allocator
+			&& nodebase_allocator == other.node_allocator;
+	}
+
+	void propogateAllocatorsOnCopy(const list& other) {
+		if (!equalAllocators(other)) {
+			fullClear();
+		}
+		propogateAllocators(other);
+		if (start == nullptr) {
+			init();
+		}
+	}
+
+	void propogateAllocators(const list& other) {
+		value_allocator = other.value_allocator;
+		node_allocator = other.node_allocator;
+		nodebase_allocator = other.nodebase_allocator;
+	}
+
+	/*
+	For copy assignment: list has same allocator so we can reuse allocated nodes. */
+	void assignReuseMem(const list& other) {
+		assignReuseMem(other.begin(), other.end());
+	}
+
+	void assignReuseMem(list&& other) {
+		assignReuseMem(std::move_iterator<iterator>{other.begin()},
+					std::move_iterator<iterator>{other.end()});
+	}
+
+	template <typename InputIt,
+		typename = RequireInputIterator<InputIt>>
+	void assignReuseMem(InputIt first, InputIt last) {
+		iterator it = begin();
+		while (first != last) {
+			if (it != end()) {
+				*it = *first;
+				++it;
+			} else {
+				insert(cend(), *first);
+			}
+			++first;
+		}
+		erase(it, cend());
+	}
+
+	void assignReuseMem(size_type count, const value_type& value) {
+		iterator it = begin();
+		while (count-- > 0) {
+			if (it != end()) {
+				*it = value;
+				++it;
+			} else {
+				insert(cend(), value);
+			}
+		}
+		erase(it, cend());
+	}
+
 /*
 Modification */
 
-	iterator insert(const_iterator pos, size_type count) {
-		iterator it = iterator(pos.base());
+	iterator insertDefault(const_iterator pos, size_type count) {
+		iterator it {pos.base()};
 		while (count-- > 0) {
-			NodeBase* node = newDefaultNode();
+			NodeBase* node {newDefaultNode()};
 			it = insertNode(it, node);
 		}
 		return it;
 	}
 
 	iterator insertNode(const_iterator pos, NodeBase* node) {
-		NodeBase* next = pos.base();
+		NodeBase* next {pos.base()};
 		node->prev = next->prev;
 		node->next = next;
 		next->prev->next = node;
@@ -478,7 +584,7 @@ Destruction */
 	}
 
 	void destroyNode(iterator it) noexcept {
-		Node* ptr = static_cast<Node*>(it.base());
+		Node* ptr {static_cast<Node*>(it.base())};
 		node_allocator.destroy(ptr);
 		node_allocator.deallocate(ptr, 1);
 	}
