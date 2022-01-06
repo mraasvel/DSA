@@ -49,6 +49,17 @@ public:
 	~DefaultCopyOnly();
 };
 
+class DefaultMoveOnly {
+private:
+	DefaultMoveOnly& operator=(const DefaultMoveOnly&);
+	DefaultMoveOnly& operator=(DefaultMoveOnly&&);
+	DefaultMoveOnly(const DefaultMoveOnly&);
+public:
+	DefaultMoveOnly();
+	DefaultMoveOnly(DefaultMoveOnly&&);
+	~DefaultMoveOnly();
+};
+
 class DCM_ONLY {
 private:
 	DCM_ONLY& operator=(const DCM_ONLY&);

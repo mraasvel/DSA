@@ -1,7 +1,10 @@
 # Todo
 
 - Linked list implementation
-	- insert
+
+	- Insertion using emplacement tests (so that iterators to ints can work for a class or something)
+	- Iterator validity tests for each function
+
 - BST implementations and balanced variants using inheritance
 - Red black tree reimplemented
 	- Empty sentinel node (no allocation)

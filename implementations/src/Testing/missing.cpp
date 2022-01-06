@@ -22,6 +22,10 @@ DefaultCopyOnly::DefaultCopyOnly() {}
 DefaultCopyOnly::DefaultCopyOnly(const DefaultCopyOnly&) {}
 DefaultCopyOnly::~DefaultCopyOnly() {}
 
+DefaultMoveOnly::DefaultMoveOnly() {}
+DefaultMoveOnly::DefaultMoveOnly(DefaultMoveOnly&&) {}
+DefaultMoveOnly::~DefaultMoveOnly() {}
+
 DCM_ONLY::DCM_ONLY() {}
 DCM_ONLY::DCM_ONLY(DCM_ONLY&&) {}
 DCM_ONLY::DCM_ONLY(const DCM_ONLY&) {}

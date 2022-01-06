@@ -8,6 +8,14 @@
 using namespace Testing;
 
 using Type = size_t;
+using CompoundType = std::vector<std::vector<int>>;
+
+// #define DS std
+
+template <typename T>
+static bool isValidList(const std::list<T>& l) {
+	return true;
+}
 
 /*
 
@@ -154,6 +162,22 @@ TEST_CASE("list assign init list", "[list]") {
 
 /*
 Insertion */
+
+TEST_CASE("list insert copy constructor", "[list]") {
+	DS::list<DefaultCopyOnly> lst;
+
+	DefaultCopyOnly dco;
+	lst.insert(lst.end(), dco);
+	REQUIRE(lst.size() == 1);
+}
+
+TEST_CASE("list insert move constructor", "[list]") {
+	DS::list<DefaultMoveOnly> lst;
+
+	lst.insert(lst.end(), DefaultMoveOnly());
+	REQUIRE(lst.size() == 1);
+}
+
 TEST_CASE("list insert", "[list]") {
 	DS::list<Type> lst;
 
@@ -177,6 +201,18 @@ TEST_CASE("list insert fill", "[list]") {
 	}
 }
 
+TEST_CASE("list insert iterator", "[list]") {
+	std::vector<CompoundType> v;
+	DS::list<CompoundType> lst;
+
+	v.resize(1000);
+	lst.insert(lst.end(), v.begin(), v.end());
+	REQUIRE(lst.size() == v.size());
+	REQUIRE(std::equal(v.begin(), v.end(), lst.begin()));
+	lst.insert(lst.begin(), v.begin(), v.end());
+	REQUIRE(lst.size() == 2 * v.size());
+}
+
 TEST_CASE("list initializer list", "[list]") {
 	DS::list<Type> lst;
 
@@ -185,6 +221,143 @@ TEST_CASE("list initializer list", "[list]") {
 	auto it = lst.insert(lst.end(), init_lst);
 	REQUIRE(lst.size() == init_lst.size());
 	REQUIRE(std::equal(it, lst.end(), init_lst.begin()));
+}
+
+TEST_CASE("list emplace", "[list]") {
+	/*
+	Call copy constructor */
+	DS::list<DefaultCopyOnly> l1;
+	DefaultCopyOnly dco;
+	l1.emplace(l1.end(), dco);
+	REQUIRE(l1.size() == 1);
+
+	/*
+	Call move constructor */
+	DS::list<DefaultMoveOnly> l2;
+	DefaultMoveOnly dmo;
+	l2.emplace(l2.end(), std::move(dmo));
+	REQUIRE(l2.size() == 1);
+
+	/*
+	Call specific constructors */
+	DS::list<std::vector<int>> l3;
+	std::vector<int> v {1, 2, 3, 4, 5};
+	l3.emplace(l3.end(), v.begin(), v.end());
+	REQUIRE(l3.size() == 1);
+	REQUIRE(std::equal(v.begin(), v.end(), l3.front().begin()));
+	l3.emplace(l3.end(), 100, 42);
+	REQUIRE(l3.back().size() == 100);
+}
+
+TEST_CASE("list emplace_back", "[list]") {
+	DS::list<std::vector<int>> lst;
+
+	std::vector<std::vector<int>> v;
+	for (std::size_t i = 0; i < 42; i++) {
+		v.push_back(std::vector<int>(i + 1, 100));
+		REQUIRE(v[i].size() == i + 1);
+	}
+	REQUIRE(v.size() == 42);
+	for (const auto& x : v) {
+		lst.emplace_back(x);
+		REQUIRE(lst.back() == x);
+	}
+}
+
+TEST_CASE("list push_back constructor test", "[list]") {
+	DS::list<DefaultCopyOnly> lst;
+	DefaultCopyOnly dco;
+	lst.push_back(dco);
+	REQUIRE(lst.size() == 1);
+	DS::list<DefaultMoveOnly> lst2;
+	lst2.push_back(DefaultMoveOnly());
+	REQUIRE(lst2.size() == 1);
+}
+
+TEST_CASE("list push_back validity test", "[list]") {
+	DS::list<Type> lst;
+
+	std::vector<Type> v {1, 2, 3, 4, 5};
+	for (auto rit = v.rbegin(); rit != v.rend(); ++rit) {
+		lst.push_back(*rit);
+	}
+	REQUIRE(lst.size() == v.size());
+	REQUIRE(lst.back() == v.front());
+	REQUIRE(lst.front() == v.back());
+	REQUIRE(std::equal(v.begin(), v.end(), lst.rbegin()));
+}
+
+TEST_CASE("list push_front constructor test", "[list]") {
+	DS::list<DefaultCopyOnly> lst;
+	DefaultCopyOnly dco;
+	lst.push_front(dco);
+	REQUIRE(lst.size() == 1);
+	DS::list<DefaultMoveOnly> lst2;
+	lst2.push_front(DefaultMoveOnly());
+	REQUIRE(lst2.size() == 1);
+}
+
+TEST_CASE("list push_front validity test", "[list]") {
+	DS::list<Type> lst;
+
+	std::vector<Type> v {1, 2, 3, 4, 5};
+	for (auto it = v.begin(); it != v.end(); ++it) {
+		lst.push_front(*it);
+	}
+	REQUIRE(lst.size() == v.size());
+	REQUIRE(lst.back() == v.front());
+	REQUIRE(lst.front() == v.back());
+	REQUIRE(std::equal(v.begin(), v.end(), lst.rbegin()));
+}
+
+TEST_CASE("list emplace_front", "[list]") {
+	DS::list<std::vector<int>> lst;
+
+	std::vector<std::vector<int>> v;
+	for (std::size_t i = 0; i < 42; i++) {
+		v.push_back(std::vector<int>(i + 1, 100));
+		REQUIRE(v[i].size() == i + 1);
+	}
+	REQUIRE(v.size() == 42);
+	for (const auto& x : v) {
+		lst.emplace_front(x);
+		REQUIRE(lst.front() == x);
+	}
+}
+
+TEST_CASE("list resize", "[list]") {
+	DS::list<Type> lst {1, 2, 3, 4};
+	DS::list<Type> cpy {lst};
+	lst.resize(4);
+	REQUIRE(lst.size() == cpy.size());
+	REQUIRE(std::equal(cpy.begin(), cpy.end(), lst.begin()));
+	lst.resize(2);
+	REQUIRE(lst.size() == 2);
+	lst.resize(10);
+	REQUIRE(lst.size() == 10);
+	lst.resize(0, 0);
+	REQUIRE(lst.empty());
+	lst.resize(1, 42);
+	lst.resize(50, 42);
+	REQUIRE(lst.size() == 50);
+	REQUIRE(lst.front() == 42);
+}
+
+TEST_CASE("list swap", "[list]") {
+	DS::list<Type> lst1 {1, 2, 3, 4};
+	DS::list<Type> lst2;
+
+	auto it = lst1.begin();
+	auto it2 = lst2.begin();
+	lst1.swap(lst2);
+	REQUIRE(lst1.empty());
+	REQUIRE(it == lst2.begin());
+	REQUIRE(it2 == lst1.begin());
+	lst2.swap(lst1);
+	lst2.swap(lst2);
+	REQUIRE(it == lst1.begin());
+	REQUIRE(it2 == lst2.begin());
+	REQUIRE(lst2.empty());
 }
 
 /*
@@ -232,6 +405,37 @@ TEST_CASE("list clear", "[list]") {
 	REQUIRE(isValidList(lst));
 	REQUIRE(lst.empty());
 	REQUIRE(lst.begin() == lst.end());
+}
+
+TEST_CASE("list pop_back", "[list]") {
+	DS::list<Type> lst (42, 69);
+	lst.push_back(42);
+	REQUIRE(lst.size() == 43);
+	REQUIRE(lst.back() == 42);
+	lst.pop_back();
+	REQUIRE(lst.back() == 69);
+	int i = 0;
+	while (!lst.empty()) {
+		lst.pop_back();
+		i++;
+	}
+	REQUIRE(i == 42);
+	REQUIRE(lst.empty());
+}
+
+TEST_CASE("list pop_front", "[list]") {
+	DS::list<Type> lst{1, 2, 3, 4};
+
+	REQUIRE(lst.front() == 1);
+	lst.pop_front();
+	REQUIRE(lst.front() == 2);
+	REQUIRE(lst.size() == 3);
+	int i = 0;
+	while (!lst.empty()) {
+		lst.pop_front();
+		i++;
+	}
+	REQUIRE(i == 3);
 }
 
 TEST_CASE("list const iterator conversion", "[list]") {

@@ -31,8 +31,17 @@ private:
 	struct ListNode : public ListNodeBase {
 		ListNode()
 		: ListNodeBase() {}
+
 		explicit ListNode(const T& value)
 		: ListNodeBase(), value(value) {}
+
+		explicit ListNode(T&& value)
+		: ListNodeBase(), value(std::move(value)) {}
+
+		template <class... Args>
+		explicit ListNode(Args&& ...args)
+		: value(std::forward<Args>(args)...) {}
+
 		T value;
 	};
 
@@ -214,7 +223,7 @@ Assignment, Copy Assignment Operators */
 			return *this;
 		}
 		if (std::allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value) {
-			propogateAllocatorsOnCopy(other);
+			propagateAllocatorsOnCopy(other);
 		}
 		assignReuseMem(other);
 		return *this;
@@ -233,7 +242,7 @@ Assignment, Copy Assignment Operators */
 	list& operator=(list&& other) {
 		if (std::allocator_traits<allocator_type>::propagate_on_container_move_assignment::value) {
 			fullClear();
-			propogateAllocators(other);
+			propagateAllocators(other);
 		} else if (!equalAllocators(other)) {
 			init();
 			assignReuseMem(other);
@@ -280,11 +289,11 @@ Element Access */
 	}
 
 	reference back() {
-		return *std::prev(begin());
+		return *std::prev(end());
 	}
 
 	const_reference back() const {
-		return *std::prev(cbegin());
+		return *std::prev(cend());
 	}
 /*
 Iterating */
@@ -358,13 +367,11 @@ Modifiers */
 	}
 
 	iterator insert(const_iterator pos, const value_type& value) {
-		NodeBase* entry {newNode(value)};
-		insertNode(pos, entry);
-		return iterator(entry);
+		return insertNode(pos, newNode(value));
 	}
 
 	iterator insert(const_iterator pos, value_type&& value) {
-		return insert(pos, value);
+		return insertNode(pos, newNode(std::move(value)));
 	}
 
 	iterator insert(const_iterator pos, size_type count, const value_type& value) {
@@ -375,15 +382,17 @@ Modifiers */
 		return it;
 	}
 
+	/*
+	TODO: use emplace constructor for insert [4, 5]: https://en.cppreference.com/w/cpp/container/list/insert */
 	template <class InputIt,
 		typename = RequireInputIterator<InputIt>>
 	iterator insert(const_iterator pos, InputIt first, InputIt last) {
 		if (first == last) {
 			return iterator(pos.base());
 		}
-		iterator it {insert(pos, *first++)};
+		iterator it {emplace(pos, *first++)};
 		while (first != last) {
-			insert(pos, *first);
+			emplace(pos, *first);
 			first++;
 		}
 		return it;
@@ -393,16 +402,18 @@ Modifiers */
 		iterator it {pos.base()};
 		for (const value_type& value : ilist) {
 			if (it == pos) {
-				it = insert(pos, value);
+				it = emplace(pos, value);
 			} else {
-				insert(pos, value);
+				emplace(pos, value);
 			}
 		}
 		return it;
 	}
 
 	template <class... Args>
-	iterator emplace(const_iterator pos, Args&&... args);
+	iterator emplace(const_iterator pos, Args&&... args) {
+		return insertNode(pos, newNode(std::forward<Args>(args)...));
+	}
 
 	/*
 	1. Cut link
@@ -427,6 +438,64 @@ Modifiers */
 		return iterator(first.base());
 	}
 
+	void push_back(const value_type& value) {
+		insert(cend(), value);
+	}
+
+	void push_back(value_type&& value) {
+		insert(cend(), std::move(value));
+	}
+
+	template <class... Args>
+	void emplace_back(Args&&... args) {
+		emplace(cend(), std::forward<Args>(args)...);
+	}
+
+	void pop_back() {
+		erase(cend());
+	}
+
+	void push_front(const value_type& value) {
+		insert(cbegin(), value);
+	}
+
+	void push_front(value_type&& value) {
+		insert(cbegin(), std::move(value));
+	}
+
+	template <class... Args>
+	void emplace_front(Args&&... args) {
+		emplace(cbegin(), std::forward<Args>(args)...);
+	}
+
+	void pop_front() {
+		erase(cbegin());
+	}
+
+	void resize(size_type count) {
+		if (size() < count) {
+			insertDefault(cend(), count - size());
+		} else {
+			erase(size() - count);
+		}
+	}
+
+	void resize(size_type count, const value_type& value) {
+		if (size() < count) {
+			insert(cend(), count - size(), value);
+		} else {
+			erase(size() - count);
+		}
+	}
+
+	void swap(list& other) {
+		if (std::allocator_traits<allocator_type>::propagate_on_container_swap::value) {
+			swapAllocators(other);
+		}
+		std::swap(start, other.start);
+		std::swap(_size, other._size);
+	}
+
 private:
 /*
 Allocation */
@@ -447,6 +516,27 @@ Allocation */
 		Node* node {node_allocator.allocate(1)};
 		try {
 			node_allocator.construct(node, value);
+		} catch (...) {
+			node_allocator.deallocate(node, 1);
+		}
+		return node;
+	}
+
+	NodeBase* newNode(value_type&& value) {
+		Node* node {node_allocator.allocate(1)};
+		try {
+			node_allocator.construct(node, std::move(value));
+		} catch (...) {
+			node_allocator.deallocate(node, 1);
+		}
+		return node;
+	}
+
+	template <class... Args>
+	NodeBase* newNode(Args&& ...args) {
+		Node* node {node_allocator.allocate(1)};
+		try {
+			node_allocator.construct(node, std::forward<Args>(args)...);
 		} catch (...) {
 			node_allocator.deallocate(node, 1);
 		}
@@ -482,20 +572,26 @@ Assignation */
 			&& nodebase_allocator == other.node_allocator;
 	}
 
-	void propogateAllocatorsOnCopy(const list& other) {
+	void propagateAllocatorsOnCopy(const list& other) {
 		if (!equalAllocators(other)) {
 			fullClear();
 		}
-		propogateAllocators(other);
+		propagateAllocators(other);
 		if (start == nullptr) {
 			init();
 		}
 	}
 
-	void propogateAllocators(const list& other) {
+	void propagateAllocators(const list& other) {
 		value_allocator = other.value_allocator;
 		node_allocator = other.node_allocator;
 		nodebase_allocator = other.nodebase_allocator;
+	}
+
+	void swapAllocators(list& other) {
+		std::swap(value_allocator, other.value_allocator);
+		std::swap(node_allocator, other.node_allocator);
+		std::swap(nodebase_allocator, other.nodebase_allocator);
 	}
 
 	/*
@@ -572,6 +668,12 @@ Destruction */
 		clear();
 		destroySentinel();
 		start = nullptr;
+	}
+
+	void erase(std::size_t n) noexcept {
+		while (n-- > 0) {
+			pop_back();
+		}
 	}
 
 	void destroySentinel() noexcept {

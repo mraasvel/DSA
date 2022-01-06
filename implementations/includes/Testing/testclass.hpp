@@ -39,7 +39,7 @@ public:
 
 	TestClass(const T& value)
 	: value(value) {
-		std::cout << "  Value Constructor" << std::endl;
+		std::cout << "Value Constructor" << std::endl;
 	}
 
 private:
