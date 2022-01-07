@@ -2,6 +2,7 @@
 #include "is_iterator.hpp"
 #include "Testing/missing.hpp"
 #include "Testing/list_invariant.hpp"
+#include "ValueType.hpp"
 #include <list>
 #include <catch2/catch.hpp>
 
@@ -211,6 +212,15 @@ TEST_CASE("list insert iterator", "[list]") {
 	REQUIRE(std::equal(v.begin(), v.end(), lst.begin()));
 	lst.insert(lst.begin(), v.begin(), v.end());
 	REQUIRE(lst.size() == 2 * v.size());
+}
+
+TEST_CASE("list insert iterator emplace", "[list]") {
+	DS::list<Value<int>> lst;
+
+	std::vector<int> v {1, 2, 3, 4, 5};
+	lst.insert(lst.end(), v.begin(), v.end());
+	REQUIRE(lst.size() == v.size());
+	REQUIRE(std::equal(v.begin(), v.end(), lst.begin()));
 }
 
 TEST_CASE("list initializer list", "[list]") {

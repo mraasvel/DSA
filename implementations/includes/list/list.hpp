@@ -172,20 +172,17 @@ Constructors */
 		insert(cend(), other.begin(), other.end());
 	}
 
-	// TODO: call swap function
 	list(list&& other)
 	: _size(0), start(nullptr), value_allocator(std::move(other.value_allocator)) {
 		std::swap(start, other.start);
 		std::swap(_size, other._size);
 	}
 
-	// TODO: call swap function
 	// TODO: SFINAE to check allocator equality: so that copy constructor is not necessary (insert is not instantiated)
 	list(list&& other, const allocator_type& alloc)
 	: _size(0), start(nullptr), value_allocator(alloc) {
 		if (alloc != other.get_allocator()) {
 			init();
-			// TODO: move_iterator
 			insert(cend(), other.begin(), other.end());
 		} else {
 			std::swap(start, other.start);
@@ -382,8 +379,6 @@ Modifiers */
 		return it;
 	}
 
-	/*
-	TODO: use emplace constructor for insert [4, 5]: https://en.cppreference.com/w/cpp/container/list/insert */
 	template <class InputIt,
 		typename = RequireInputIterator<InputIt>>
 	iterator insert(const_iterator pos, InputIt first, InputIt last) {

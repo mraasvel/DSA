@@ -17,5 +17,4 @@ TEST_CASE("Temporary Testing", "[tmp]") {
 	lst.emplace(lst.end(), 42);
 	lst.emplace(lst.end(), one);
 	lst.emplace(lst.end(), std::move(two));
-
 }

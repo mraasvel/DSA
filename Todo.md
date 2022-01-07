@@ -2,8 +2,18 @@
 
 - Linked list implementation
 
-	- Insertion using emplacement tests (so that iterators to ints can work for a class or something)
 	- Iterator validity tests for each function
+	- Implement operations:
+		- remove
+		- remove_if
+		- unique
+		- reverse
+		- splice
+		- merge
+		- sort (mergesort using splice and merge probably)
+
+	- Non-member functions
+	- cplusplus.com checks
 
 - BST implementations and balanced variants using inheritance
 - Red black tree reimplemented
