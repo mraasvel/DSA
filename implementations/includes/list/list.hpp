@@ -530,13 +530,13 @@ Operations */
 	}
 
 	void reverse() noexcept {
-		std::swap(cend().base()->prev, cend().base()->next);
-		start = std::next(cend()).base();
+		start = std::prev(cend()).base();
 		auto it = cbegin();
 		while (it != cend()) {
 			std::swap(it.base()->prev, it.base()->next);
 			++it;
 		}
+		std::swap(it.base()->prev, it.base()->next);
 	}
 
 	void unique() {
