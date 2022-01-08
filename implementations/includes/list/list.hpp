@@ -4,6 +4,7 @@
 #include "is_iterator.hpp"
 #include <memory> // std::allocator
 #include <iostream> // REMOVE
+#include <cassert> // REMOVE
 
 /*
 Class Structure:
@@ -489,6 +490,74 @@ Modifiers */
 		}
 		std::swap(start, other.start);
 		std::swap(_size, other._size);
+	}
+
+/*
+Operations */
+
+	void merge(list& other);
+	void merge(list&& other);
+	template <class Compare>
+	void merge(list& other, Compare comp);
+	template <class Compare>
+	void merge(list&& other, Compare comp);
+
+	void splice(const_iterator pos, list& other);
+	void splice(const_iterator pos, list&& other);
+	void splice(const_iterator pos, list& other, const_iterator it);
+	void splice(const_iterator pos, list&& other, const_iterator it);
+	void splice(const_iterator pos, list& other,
+				const_iterator first, const_iterator last);
+	void splice(const_iterator pos, list&& other,
+				const_iterator first, const_iterator last);
+
+	void remove(const value_type& value) {
+		return remove_if([&value] (const value_type& x) -> bool {
+			return x == value;
+		});
+	}
+
+	template <class UnaryPredicate>
+	void remove_if(UnaryPredicate pred) {
+		auto it = cbegin();
+		while (it != cend()) {
+			if (pred(*it)) {
+				erase(it++);
+			} else {
+				++it;
+			}
+		}
+	}
+
+	void reverse() noexcept {
+		std::swap(cend().base()->prev, cend().base()->next);
+		start = std::next(cend()).base();
+		auto it = cbegin();
+		while (it != cend()) {
+			std::swap(it.base()->prev, it.base()->next);
+			++it;
+		}
+	}
+
+	void unique() {
+		return unique([] (const value_type& a, const value_type& b) -> bool {
+			return a == b;
+		});
+	}
+
+	template <class BinaryPredicate>
+	void unique(BinaryPredicate pred) {
+		auto it = cbegin();
+		while (it != cend()) {
+			auto next {std::next(it)};
+			if (next == end()) {
+				break;
+			} else if (pred(*it, *next)) {
+				erase(next);
+			} else {
+				it = next;
+			}
+		}
 	}
 
 private:

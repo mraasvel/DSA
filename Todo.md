@@ -4,16 +4,14 @@
 
 	- Iterator validity tests for each function
 	- Implement operations:
-		- remove
-		- remove_if
-		- unique
-		- reverse
 		- splice
 		- merge
 		- sort (mergesort using splice and merge probably)
 
 	- Non-member functions
 	- cplusplus.com checks
+
+- CGI integration
 
 - BST implementations and balanced variants using inheritance
 - Red black tree reimplemented

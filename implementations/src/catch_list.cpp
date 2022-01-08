@@ -18,6 +18,14 @@ static bool isValidList(const std::list<T>& l) {
 	return true;
 }
 
+DS::list<Type> randomList(std::size_t n) {
+	DS::list<Type> lst;
+	for (std::size_t i = 0; i < n; ++i) {
+		lst.emplace_back(rand());
+	}
+	return lst;
+}
+
 /*
 
 To use STL `#define DS std` */
@@ -446,6 +454,111 @@ TEST_CASE("list pop_front", "[list]") {
 		i++;
 	}
 	REQUIRE(i == 3);
+}
+
+/*
+Operations */
+
+template <typename T>
+bool equalLists(DS::list<T> lst, std::list<T> ref) {
+	if (lst.size() != ref.size()) {
+		return false;
+	}
+	return std::equal(ref.begin(), ref.end(), lst.begin());
+}
+
+template <typename T, typename BinaryFunction>
+void Operate(DS::list<T> lst, std::list<Type> ref, BinaryFunction f) {
+	f(lst, ref);
+	REQUIRE(equalLists(lst, ref));
+}
+
+void removeValue(const DS::list<Type>& a, const std::list<Type>& b, Type value) {
+	SECTION("lst.remove(" + std::to_string(value) + ")") {
+		Operate(a, b, [&value] (DS::list<Type>& a, std::list<Type>& b) {
+			a.remove(value);
+			b.remove(value);
+		});
+	}
+}
+
+template <typename UnaryPredicate>
+void removeIfWrapper(const DS::list<Type>& a, const std::list<Type>& b, UnaryPredicate pred) {
+	Operate(a, b, [&pred] (DS::list<Type>& a, std::list<Type>& b) {
+		a.remove_if(pred);
+		b.remove_if(pred);
+	});
+}
+
+TEST_CASE("list remove", "[list]") {
+	DS::list<Type> lst {1, 2, 3, 4, 5};
+	std::list<Type> ref {lst.begin(), lst.end()};
+
+	REQUIRE(equalLists(lst, ref));
+	removeValue(lst, ref, 42);
+	removeValue(lst, ref, 1);
+	removeValue(lst, ref, 5);
+	removeValue(lst, ref, 2);
+	removeValue(lst, ref, 3);
+	removeValue(lst, ref, 4);
+	lst.assign({42, 1, 42, 2, 3, 4, 42});
+	ref.assign(lst.begin(), lst.end());
+	removeValue(lst, ref, 42);
+	removeValue(lst, ref, 4);
+}
+
+TEST_CASE("list remove if", "[list]") {
+	DS::list<Type> lst = randomList(1000);
+	std::list<Type> ref {lst.begin(), lst.end()};
+
+	removeIfWrapper(lst, ref, [] (const Type& x) -> bool {
+		return x > 20;
+	});
+	removeIfWrapper(lst, ref, [&lst, &ref] (const Type& x) -> bool {
+		return x == lst.front();
+	});
+	removeIfWrapper(lst, ref, [] (const Type& x) -> bool {
+		return x < 0;
+	});
+}
+
+template <typename C>
+void printList(const C& lst) {
+	std::cout << "List:";
+	for (const auto& x : lst) {
+		std::cout << ' ' << x;
+	}
+	std::cout << std::endl;
+}
+
+static bool reverseTest(DS::list<Type>&& lst) {
+	std::list<Type> ref {lst.begin(), lst.end()};
+	lst.reverse();
+	return std::equal(ref.rbegin(), ref.rend(), lst.begin());
+}
+
+TEST_CASE("list reverse", "[list]") {
+	REQUIRE(reverseTest(randomList(100)));
+	REQUIRE(reverseTest(randomList(0)));
+	REQUIRE(reverseTest(randomList(10)));
+	REQUIRE(reverseTest(randomList(1)));
+	REQUIRE(reverseTest(randomList(42)));
+}
+
+TEST_CASE("list unique", "[list]") {
+	DS::list<Type> lst {1, 1, 2, 1, 1, 2, 2, 2, 2};
+	auto it = lst.begin();
+	lst.unique();
+	REQUIRE(lst.size() == 4);
+	REQUIRE(it == lst.begin());
+}
+
+TEST_CASE("list unique predicate", "[list]") {
+	DS::list<Type> lst {1, 2, 2, 3, 4, 5, 5, 5, 6, 7, 1, 9, 10};
+	lst.unique([] (const Type& x, const Type& y) {
+		return x == y;
+	});
+	REQUIRE(lst.size() == 10);
 }
 
 TEST_CASE("list const iterator conversion", "[list]") {

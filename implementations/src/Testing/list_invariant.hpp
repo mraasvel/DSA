@@ -1,9 +1,11 @@
 #pragma once
 
 #include "list/list.hpp"
+#include <cassert>
+#include <iostream>
 
 template <typename T, typename Alloc>
-bool isValidList(const DS::list<T, Alloc> list) {
+bool isValidList(const DS::list<T, Alloc>& list) {
 	for (auto it = list.begin(); it != list.end(); ++it) {
 		if (it.base()->prev->next != it.base()
 			|| it.base()->next->prev != it.base()) {
