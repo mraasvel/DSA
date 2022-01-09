@@ -561,6 +561,43 @@ TEST_CASE("list unique predicate", "[list]") {
 	REQUIRE(lst.size() == 10);
 }
 
+template <typename Splicer>
+static void spliceTest(DS::list<Type> lst, Splicer splicer) {
+	std::list<Type> ref {lst.begin(), lst.end()};
+	splicer(lst, ref);
+	REQUIRE(isValidList(lst));
+	REQUIRE(equalLists(lst, ref));
+}
+
+TEST_CASE("list splice", "[list]") {
+	spliceTest({1, 2, 3}, [] (DS::list<Type>& x, std::list<Type>& y) {
+		x.splice(x.begin(), DS::list<Type> {4, 5, 6});
+		y.splice(y.begin(), std::list<Type> {4, 5, 6});
+	});
+	spliceTest({}, [] (DS::list<Type>& x, std::list<Type>& y) {
+		x.splice(x.begin(), DS::list<Type> {4, 5, 6});
+		y.splice(y.begin(), std::list<Type> {4, 5, 6});
+	});
+	spliceTest({}, [] (DS::list<Type>& x, std::list<Type>& y) {
+		x.splice(x.begin(), DS::list<Type> {4});
+		y.splice(y.begin(), std::list<Type> {4});
+	});
+	spliceTest({1}, [] (DS::list<Type>& x, std::list<Type>& y) {
+		x.splice(x.end(), DS::list<Type> {1, 2, 3});
+		y.splice(y.end(), std::list<Type> {1, 2, 3});
+	});
+	spliceTest({1, 2, 3}, [] (DS::list<Type>& x, std::list<Type>& y) {
+		x.splice(std::next(x.begin()), DS::list<Type> {1, 2, 3});
+		y.splice(std::next(y.begin()), std::list<Type> {1, 2, 3});
+	});
+	spliceTest({1, 2, 3}, [] (DS::list<Type>& x, std::list<Type>& y) {
+		DS::list<Type> z {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+		std::list<Type> copy {z.begin(), z.end()};
+		x.splice(std::prev(x.end()), z);
+		y.splice(std::prev(y.end()), copy);
+	});
+}
+
 TEST_CASE("list const iterator conversion", "[list]") {
 	DS::list<Type>::iterator x;
 	DS::list<Type>::const_iterator y = x;

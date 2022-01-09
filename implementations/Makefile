@@ -27,9 +27,9 @@ else
 	DFLAGS := -O0 -g -fsanitize=address
 endif
 
-ifdef DEBUG
+# ifdef DEBUG
 	CFLAGS += $(DFLAGS)
-endif
+# endif
 
 RM = /bin/rm -f
 

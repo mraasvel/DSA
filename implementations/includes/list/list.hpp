@@ -416,15 +416,10 @@ Modifiers */
 	2. Save previous node
 	3. Destroy node */
 	iterator erase(const_iterator pos) {
-		NodeBase* next {pos.base()->next};
-		next->prev = next->prev->prev;
-		next->prev->next = next;
-		if (pos == begin()) {
-			start = next;
-		}
+		iterator next = unlink(pos);
 		_size -= 1;
 		destroyNode(iterator(pos.base()));
-		return iterator(next);
+		return next;
 	}
 
 	iterator erase(const_iterator first, const_iterator last) {
@@ -502,14 +497,46 @@ Operations */
 	template <class Compare>
 	void merge(list&& other, Compare comp);
 
-	void splice(const_iterator pos, list& other);
-	void splice(const_iterator pos, list&& other);
-	void splice(const_iterator pos, list& other, const_iterator it);
-	void splice(const_iterator pos, list&& other, const_iterator it);
+	void splice(const_iterator pos, list& other) {
+		if (other.size() == 0) {
+			return;
+		}
+		auto first = other.begin();
+		auto last = std::prev(other.end());
+		other.unlinkRange(first, other.end());
+		insertRange(pos, first, last, other.size());
+		other._size = 0;
+	}
+
+	void splice(const_iterator pos, list&& other) {
+		splice(pos, other);
+	}
+
+	void splice(const_iterator pos, list& other, const_iterator it) {
+		other.unlink(it);
+		other._size -= 1;
+		insertRange(pos, it, it, 1);
+	}
+
+	void splice(const_iterator pos, list&& other, const_iterator it) {
+		splice(pos, other, it);
+	}
+
 	void splice(const_iterator pos, list& other,
-				const_iterator first, const_iterator last);
+				const_iterator first, const_iterator last) {
+		auto prev {std::prev(last)};
+		other.unlinkRange(first, last);
+		if (this == &other) {
+			insertRange(pos, first, prev, 0);
+		} else {
+			insertRange(pos, first, prev, std::distance(first, prev) + 1);
+		}
+	}
+
 	void splice(const_iterator pos, list&& other,
-				const_iterator first, const_iterator last);
+				const_iterator first, const_iterator last) {
+		splice(pos, other, first, last);
+	}
 
 	void remove(const value_type& value) {
 		return remove_if([&value] (const value_type& x) -> bool {
@@ -723,6 +750,18 @@ Modification */
 		return iterator(node);
 	}
 
+	void insertRange(const_iterator pos, iterator first, iterator last, std::size_t distance) {
+		NodeBase* next {pos.base()};
+		first.base()->prev = next->prev;
+		last.base()->next = next;
+		next->prev->next = first.base();
+		next->prev = last.base();
+		if (pos == begin()) {
+			start = first.base();
+		}
+		_size += distance;
+	}
+
 /*
 Destruction */
 	void fullClear() noexcept {
@@ -738,6 +777,24 @@ Destruction */
 		while (n-- > 0) {
 			pop_back();
 		}
+	}
+
+	iterator unlink(const_iterator pos) {
+		return unlinkRange(pos, std::next(pos));
+	}
+
+	/*
+	Unlinks in the range [first, last)
+	Warning: does NOT decrement size */
+	iterator unlinkRange(const_iterator first, const_iterator last) {
+		NodeBase* next {last.base()};
+		NodeBase* prev {std::prev(first).base()};
+		next->prev = prev;
+		prev->next = next;
+		if (first == begin()) {
+			start = next;
+		}
+		return iterator(next);
 	}
 
 	void destroySentinel() noexcept {
