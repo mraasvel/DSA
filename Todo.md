@@ -10,6 +10,7 @@
 
 	- Non-member functions
 	- cplusplus.com checks
+	- Testing: permutations and automation, there are only so many inputs and variations for each function (sizes: 1, 2, 3, 5)
 
 - CGI integration
 

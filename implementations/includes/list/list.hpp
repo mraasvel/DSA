@@ -526,11 +526,12 @@ Operations */
 				const_iterator first, const_iterator last) {
 		auto prev {std::prev(last)};
 		other.unlinkRange(first, last);
-		if (this == &other) {
-			insertRange(pos, first, prev, 0);
-		} else {
-			insertRange(pos, first, prev, std::distance(first, prev) + 1);
+		ptrdiff_t delta {0};
+		if (this != &other) {
+			delta = std::distance(first, prev) + 1;
 		}
+		other._size -= delta;
+		insertRange(pos, first, prev, delta);
 	}
 
 	void splice(const_iterator pos, list&& other,
@@ -750,7 +751,7 @@ Modification */
 		return iterator(node);
 	}
 
-	void insertRange(const_iterator pos, iterator first, iterator last, std::size_t distance) {
+	void insertRange(const_iterator pos, const_iterator first, const_iterator last, std::size_t distance) {
 		NodeBase* next {pos.base()};
 		first.base()->prev = next->prev;
 		last.base()->next = next;

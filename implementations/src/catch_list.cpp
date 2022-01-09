@@ -5,25 +5,61 @@
 #include "ValueType.hpp"
 #include <list>
 #include <catch2/catch.hpp>
+#include <utility>
 
 using namespace Testing;
 
 using Type = size_t;
 using CompoundType = std::vector<std::vector<int>>;
+template <typename T>
+using List = DS::list<T>;
+template <typename T>
+using StdList = std::list<T>;
+template <typename T>
+using ListPair = std::pair<List<T>, StdList<T>>;
 
-// #define DS std
+namespace DS {
+
+template <typename T1, typename T2>
+static bool operator==(const List<T1>& lhs, const StdList<T2>& rhs) {
+	if (lhs.size() != rhs.size()) {
+		return false;
+	}
+	return std::equal(rhs.begin(), rhs.end(), lhs.begin());
+}
+
+template <typename T1, typename T2>
+static bool operator==(const StdList<T1>& lhs, const List<T2>& rhs) {
+	return rhs == lhs;
+}
+
+}
 
 template <typename T>
-static bool isValidList(const std::list<T>& l) {
-	return true;
+static bool listInvariantTest(const ListPair<T>& p) {
+	return isValidList(p.first);
+}
+
+template <typename T>
+static T constructDefault() {
+	return T();
+}
+
+template <typename T, typename ValueGenerator>
+ListPair<T> generateList(std::size_t size,
+						ValueGenerator generator = constructDefault<T>) {
+	ListPair<T> result;
+	while (size-- > 0) {
+		const T value = generator();
+		result.first.emplace_back(value);
+		result.second.emplace_back(value);
+	}
+	assert(result.first == result.second);
+	return result;
 }
 
 DS::list<Type> randomList(std::size_t n) {
-	DS::list<Type> lst;
-	for (std::size_t i = 0; i < n; ++i) {
-		lst.emplace_back(rand());
-	}
-	return lst;
+	return generateList<Type>(n, &rand).first;
 }
 
 /*
@@ -596,6 +632,35 @@ TEST_CASE("list splice", "[list]") {
 		x.splice(std::prev(x.end()), z);
 		y.splice(std::prev(y.end()), copy);
 	});
+}
+
+/*
+Permutations of lists: generate 2 initializer lists, make a std copy, perform each possible splice and compare each result */
+template <typename ListType>
+static ListType spliceSingleIteratorTest() {
+	ListType lst {1, 2, 3, 4};
+	ListType other {1, 2, 3, 4};
+
+	lst.splice(std::next(lst.begin()), other, other.begin());
+	return lst;
+}
+
+TEST_CASE("list splice single iterator", "[list]") {
+	auto x = spliceSingleIteratorTest<DS::list<Type>>();
+	auto y = spliceSingleIteratorTest<std::list<Type>>();
+	REQUIRE(equalLists(x, y));
+}
+
+TEST_CASE("list splice range", "[list]") {
+	srand(time(0));
+	rand();
+	ListPair<int> pair = generateList<int>(1, &rand);
+	ListPair<int> spliced = generateList<int>(1, &rand);
+	pair.first.splice(pair.first.begin(), spliced.first, spliced.first.begin(), spliced.first.end());
+	pair.second.splice(pair.second.begin(), spliced.second, spliced.second.begin(), spliced.second.end());
+	REQUIRE(pair.first == pair.second);
+	REQUIRE(spliced.first == spliced.second);
+	// spliceRangePermutations(pair, spliced);
 }
 
 TEST_CASE("list const iterator conversion", "[list]") {
