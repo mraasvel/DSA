@@ -490,12 +490,34 @@ Modifiers */
 /*
 Operations */
 
-	void merge(list& other);
-	void merge(list&& other);
+	void merge(list& other) {
+		merge(other, std::less<value_type>());
+	}
+
+	void merge(list&& other) {
+		merge(other);
+	}
+
 	template <class Compare>
-	void merge(list& other, Compare comp);
+	void merge(list& other, Compare comp) {
+		if (this == &other) {
+			return;
+		}
+		auto it_own = begin();
+		auto it_other = other.begin();
+		while (it_other != other.end()) {
+			if (it_own == end() || comp(*it_other, *it_own)) {
+				splice(it_own, other, it_other++);
+			} else {
+				++it_own;
+			}
+		}
+	}
+
 	template <class Compare>
-	void merge(list&& other, Compare comp);
+	void merge(list&& other, Compare comp) {
+		merge(other, comp);
+	}
 
 	void splice(const_iterator pos, list& other) {
 		if (other.size() == 0) {
@@ -586,6 +608,14 @@ Operations */
 				it = next;
 			}
 		}
+	}
+
+	void sort() {
+		sort(std::less<value_type>());
+	}
+
+	template <class Compare>
+	void sort(Compare comp) {
 	}
 
 private:

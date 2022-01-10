@@ -6,36 +6,41 @@
 
 namespace util {
 
-template <typename T, typename PermutationGenerator>
-class PermutationIterator {
-public:
-	using value_type = typename PermutationGenerator::permutation_type;
-public:
-	PermutationIterator(PermutationGenerator* x)
-	: generator(x) {}
+	namespace Detail {
 
-	const value_type& operator*() {
-		return generator->getPermutation();
+	template <typename T, typename PermutationGenerator>
+	class PermutationIterator {
+	public:
+		using value_type = typename PermutationGenerator::permutation_type;
+	public:
+		PermutationIterator(PermutationGenerator* x)
+		: generator(x) {}
+
+		const value_type& operator*() {
+			return generator->getPermutation();
+		}
+
+		PermutationIterator& operator++() {
+			generator->nextPermutation();
+			return *this;
+		}
+
+		/*
+		Hacky comparison for range-based for loop syntax */
+		friend bool operator==(const PermutationIterator& lhs, const PermutationIterator& rhs) {
+			return lhs.generator->isEnd() && rhs.generator->isEnd();
+		}
+
+		friend bool operator!=(const PermutationIterator& lhs, const PermutationIterator& rhs) {
+			return !(lhs == rhs);
+		}
+
+	private:
+		PermutationGenerator* generator;
+	};
+
 	}
 
-	PermutationIterator& operator++() {
-		generator->nextPermutation();
-		return *this;
-	}
-
-	/*
-	Hacky comparison for range-based for loop syntax */
-	friend bool operator==(const PermutationIterator& lhs, const PermutationIterator& rhs) {
-		return lhs.generator->isEnd() && rhs.generator->isEnd();
-	}
-
-	friend bool operator!=(const PermutationIterator& lhs, const PermutationIterator& rhs) {
-		return !(lhs == rhs);
-	}
-
-private:
-	PermutationGenerator* generator;
-};
 
 /*
 Generate list of n permutations of [start, end]
@@ -49,7 +54,7 @@ class ReplacementPermutations {
 public:
 	using value_type = T;
 	using permutation_type = std::vector<T>;
-	using iterator = PermutationIterator<T, ReplacementPermutations>;
+	using iterator = Detail::PermutationIterator<T, ReplacementPermutations>;
 public:
 	ReplacementPermutations(std::size_t n, const T& first, const T& last)
 	: permutation(n, first), first(first), last(last), done(false) {}
@@ -98,7 +103,7 @@ class Permutations {
 public:
 	using value_type = T;
 	using permutation_type = std::vector<T>;
-	using iterator = PermutationIterator<T, Permutations>;
+	using iterator = Detail::PermutationIterator<T, Permutations>;
 public:
 	Permutations(T first, const T& last)
 	: done(false) {

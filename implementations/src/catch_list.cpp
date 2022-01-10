@@ -660,7 +660,18 @@ TEST_CASE("list splice range", "[list]") {
 	pair.second.splice(pair.second.begin(), spliced.second, spliced.second.begin(), spliced.second.end());
 	REQUIRE(pair.first == pair.second);
 	REQUIRE(spliced.first == spliced.second);
-	// spliceRangePermutations(pair, spliced);
+}
+
+TEST_CASE("list merge", "[list]") {
+	DS::list<int> lst {-50, 1, 4, 123, 500};
+	std::list<int> ref {lst.begin(), lst.end()};
+	lst.merge(DS::list<int> {2, 8, 9});
+	ref.merge(std::list<int> {2, 8, 9});
+	REQUIRE(lst == ref);
+}
+
+TEST_CASE("list merge compare", "[list]") {
+
 }
 
 TEST_CASE("list const iterator conversion", "[list]") {
