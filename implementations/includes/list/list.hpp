@@ -505,12 +505,15 @@ Operations */
 		}
 		auto it_own = begin();
 		auto it_other = other.begin();
-		while (it_other != other.end()) {
-			if (it_own == end() || comp(*it_other, *it_own)) {
+		while (it_own != end() && it_other != other.end()) {
+			if (comp(*it_other, *it_own)) {
 				splice(it_own, other, it_other++);
 			} else {
 				++it_own;
 			}
+		}
+		if (other.size() != 0) {
+			splice(end(), other);
 		}
 	}
 
@@ -546,14 +549,11 @@ Operations */
 
 	void splice(const_iterator pos, list& other,
 				const_iterator first, const_iterator last) {
-		auto prev {std::prev(last)};
-		other.unlinkRange(first, last);
 		ptrdiff_t delta {0};
 		if (this != &other) {
-			delta = std::distance(first, prev) + 1;
+			delta = std::distance(first, last);
 		}
-		other._size -= delta;
-		insertRange(pos, first, prev, delta);
+		spliceDelta(pos, other, first, last, delta);
 	}
 
 	void splice(const_iterator pos, list&& other,
@@ -616,6 +616,7 @@ Operations */
 
 	template <class Compare>
 	void sort(Compare comp) {
+		mergesort(*this, comp);
 	}
 
 private:
@@ -791,6 +792,43 @@ Modification */
 			start = first.base();
 		}
 		_size += distance;
+	}
+
+/*
+Operations */
+
+	void spliceDelta(const_iterator pos, list& other,
+					const_iterator first, const_iterator last,
+					ptrdiff_t delta) {
+		auto prev {std::prev(last)};
+		other.unlinkRange(first, last);
+		other._size -= delta;
+		insertRange(pos, first, prev, delta);
+	}
+
+	/*
+	O(n log n)
+	Each height divides the list size by 2 and multiplies the number of nodes by 2.
+	Due to std::advance, each node has does O(n) work.
+	The lowest 'level' has n nodes, with an input of list size 1
+	Then the next lowest level has n / 2 nodes, with an input of list size 2
+	So we get: (1 * n) + (2 * (n / 2)) + (4 * (n / 4)) ... + (n * 1)
+	for each level, so the complexity is O(n * h), where h is the height of the tree.
+	Which is equal to the amount of times n can be divided by 2 to get to 1 (log n)
+	= O(n log n)*/
+	template <typename Compare>
+	void mergesort(list& lst, Compare comp) {
+		if (lst.size() <= 1) {
+			return;
+		}
+		const_iterator midpoint = lst.begin();
+		// linear in current iteration's list size
+		std::advance(midpoint, lst.size() / 2);
+		list rightside;
+		rightside.spliceDelta(rightside.end(), lst, midpoint, lst.end(), lst.size() / 2 + lst.size() % 2);
+		mergesort(lst, comp);
+		mergesort(rightside, comp);
+		lst.merge(rightside);
 	}
 
 /*

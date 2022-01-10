@@ -665,13 +665,24 @@ TEST_CASE("list splice range", "[list]") {
 TEST_CASE("list merge", "[list]") {
 	DS::list<int> lst {-50, 1, 4, 123, 500};
 	std::list<int> ref {lst.begin(), lst.end()};
-	lst.merge(DS::list<int> {2, 8, 9});
-	ref.merge(std::list<int> {2, 8, 9});
+	lst.merge(DS::list<int> {2, 8, 9, 600, 700, 800, 900, 100});
+	ref.merge(std::list<int> {2, 8, 9, 600, 700, 800, 900, 100});
 	REQUIRE(lst == ref);
 }
 
 TEST_CASE("list merge compare", "[list]") {
 
+}
+
+TEST_CASE("list sort", "[list]") {
+	for (int i = 0; i < 10; i++) {
+		for (int size = 0; size <= 10; size++) {
+			DS::list<Type> lst {randomList(size)};
+			lst.sort();
+			REQUIRE(std::is_sorted(lst.begin(), lst.end()));
+
+		}
+	}
 }
 
 TEST_CASE("list const iterator conversion", "[list]") {

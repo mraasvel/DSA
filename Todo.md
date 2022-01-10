@@ -3,9 +3,6 @@
 - Linked list implementation
 
 	- Iterator validity tests for each function
-	- Implement operations:
-		- merge
-		- sort (mergesort using splice and merge probably)
 
 	- Non-member functions
 	- cplusplus.com checks
