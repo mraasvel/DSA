@@ -671,7 +671,16 @@ TEST_CASE("list merge", "[list]") {
 }
 
 TEST_CASE("list merge compare", "[list]") {
-
+	DS::list<Type> lst {randomList(100)};
+	DS::list<Type> lst2 {randomList(100)};
+	lst.sort(std::greater<Type>());
+	lst2.sort(std::greater<Type>());
+	REQUIRE(std::is_sorted(lst.begin(), lst.end(), std::greater<Type>()));
+	REQUIRE(std::is_sorted(lst2.begin(), lst2.end(), std::greater<Type>()));
+	lst.merge(lst2, std::greater<Type>());
+	REQUIRE(lst2.size() == 0);
+	REQUIRE(lst.size() == 200);
+	REQUIRE(std::is_sorted(lst.begin(), lst.end(), std::greater<Type>()));
 }
 
 TEST_CASE("list sort", "[list]") {

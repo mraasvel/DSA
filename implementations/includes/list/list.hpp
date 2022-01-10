@@ -526,11 +526,7 @@ Operations */
 		if (other.size() == 0) {
 			return;
 		}
-		auto first = other.begin();
-		auto last = std::prev(other.end());
-		other.unlinkRange(first, other.end());
-		insertRange(pos, first, last, other.size());
-		other._size = 0;
+		spliceDelta(pos, other, other.begin(), other.end(), other.size());
 	}
 
 	void splice(const_iterator pos, list&& other) {
@@ -828,7 +824,7 @@ Operations */
 		rightside.spliceDelta(rightside.end(), lst, midpoint, lst.end(), lst.size() / 2 + lst.size() % 2);
 		mergesort(lst, comp);
 		mergesort(rightside, comp);
-		lst.merge(rightside);
+		lst.merge(rightside, comp);
 	}
 
 /*
