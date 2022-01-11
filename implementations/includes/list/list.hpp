@@ -3,8 +3,6 @@
 
 #include "is_iterator.hpp"
 #include <memory> // std::allocator
-#include <iostream> // REMOVE
-#include <cassert> // REMOVE
 
 /*
 Class Structure:
@@ -179,7 +177,6 @@ Constructors */
 		std::swap(_size, other._size);
 	}
 
-	// TODO: SFINAE to check allocator equality: so that copy constructor is not necessary (insert is not instantiated)
 	list(list&& other, const allocator_type& alloc)
 	: _size(0), start(nullptr), value_allocator(alloc) {
 		if (alloc != other.get_allocator()) {
@@ -246,7 +243,6 @@ Assignment, Copy Assignment Operators */
 			assignReuseMem(other);
 			return *this;
 		}
-		// TODO: call swap function
 		std::swap(start, other.start);
 		std::swap(_size, other._size);
 		return *this;
@@ -884,6 +880,55 @@ private:
 	nodebase_allocator_type nodebase_allocator;
 	node_allocator_type node_allocator;
 };
+
+template <class T, class Alloc>
+bool operator==(const DS::list<T,Alloc>& lhs,
+				const DS::list<T,Alloc>& rhs) {
+	if (lhs.size() != rhs.size()) {
+		return false;
+	}
+	return std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+template <class T, class Alloc>
+bool operator!=(const DS::list<T,Alloc>& lhs,
+				const DS::list<T,Alloc>& rhs) {
+	return !(lhs == rhs);
+}
+
+template <class T, class Alloc>
+bool operator<( const DS::list<T,Alloc>& lhs,
+				const DS::list<T,Alloc>& rhs) {
+	return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+}
+
+template <class T, class Alloc>
+bool operator<=(const DS::list<T,Alloc>& lhs,
+				const DS::list<T,Alloc>& rhs) {
+	return !(rhs < lhs);
+}
+
+template <class T, class Alloc>
+bool operator>( const DS::list<T,Alloc>& lhs,
+				const DS::list<T,Alloc>& rhs) {
+	return rhs < lhs;
+}
+
+template <class T, class Alloc>
+bool operator>=(const DS::list<T,Alloc>& lhs,
+				const DS::list<T,Alloc>& rhs) {
+	return !(lhs < rhs);
+}
+
+}
+
+namespace std {
+
+template <typename T, typename Alloc>
+void swap(  DS::list<T, Alloc>& lhs,
+			DS::list<T, Alloc>& rhs) {
+	lhs.swap(rhs);
+}
 
 }
 

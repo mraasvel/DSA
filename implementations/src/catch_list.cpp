@@ -694,6 +694,15 @@ TEST_CASE("list sort", "[list]") {
 	}
 }
 
+TEST_CASE("list swap overload", "[list]") {
+	DS::list<Type> x {randomList(100)};
+	DS::list<Type> y {randomList(100)};
+
+	std::list<Type> ref {x.begin(), x.end()};
+	std::swap(x, y);
+	REQUIRE(y == ref);
+}
+
 TEST_CASE("list const iterator conversion", "[list]") {
 	DS::list<Type>::iterator x;
 	DS::list<Type>::const_iterator y = x;
