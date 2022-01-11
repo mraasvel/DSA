@@ -1,8 +1,10 @@
-# Data Structures
+# About
 
-Implementations of STL containers and other data structures
+Implementations of data structures and algorithms in C++
 
+## Data Structures
 
-# Red Black Tree
+- Red Black Tree
+- Doubly Linked List
 
-Set implementation of a RedBlackTree including catch testcases
+## Algorithms
