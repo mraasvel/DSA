@@ -1,0 +1,3 @@
+The main is in /algorithm
+All other functions and functionalities are in /src and compiled into a library
+This we can use to link to the tests (test main), and easily compile both seperately

@@ -2,18 +2,19 @@
 
 set(EXEC "test.out")
 
-find_package(Catch2 REQUIRED)
-target_link_libraries("${EXEC}" Catch2::Catch2)
+add_executable("${EXEC}"
+	main.cpp
+	sort.cpp
+)
 
-# This will install it?
+target_link_libraries("${EXEC}" PUBLIC "alg")
 
-# Include(FetchContent)
+Include(FetchContent)
+FetchContent_Declare(
+	Catch2
+	GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+	GIT_TAG        v2.13.1
+)
+FetchContent_MakeAvailable(Catch2)
 
-# FetchContent_Declare(
-	# Catch2
-	# GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-	# GIT_TAG        v2.13.1)
-
-# FetchContent_MakeAvailable(Catch2)
-
-# target_link_libraries(tests Catch2::Catch2)
+target_link_libraries("${EXEC}" PUBLIC Catch2::Catch2)
