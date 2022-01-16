@@ -64,4 +64,36 @@ void insertionSort(RandomAccessIt first, RandomAccessIt last) {
 	insertionSort(first, last, std::less<decltype(*first)>());
 }
 
+/*
+Loop invariant: the range [first, i) is sorted and [i, last) contains no elements smaller than the elements in range [first, i)
+Work:
+Work      Times
+c1        (n - 1)
+c2        (n - 1)
+c3(n - i) (n - 1)
+
+Best case: same as worst case since the same operations are always executed
+Runtime complexity: Theta of n squared or O(n^2) */
+template <typename RandomAccessIt, typename Compare,
+	RequireRandomAccessIterator<RandomAccessIt> = true>
+void selectionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	for (auto i = first; i != last - 1; ++i) {
+		auto min_element = i;
+		for (auto j = i + 1; j != last; ++j) {
+			if (*j < *min_element) {
+				min_element = j;
+			}
+		}
+		std::swap(*i, *min_element);
+	}
+}
+
+template <typename RandomAccessIt>
+void selectionSort(RandomAccessIt first, RandomAccessIt last) {
+	if (first == last) {
+		return;
+	}
+	selectionSort(first, last, std::less<decltype(*first)>());
+}
+
 }

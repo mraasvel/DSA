@@ -6,7 +6,7 @@ then
 	cmake --build debug && ./debug/algorithm/a.out
 elif [ "$1" = "test" ]
 then
-	cmake --build build && ./build/tests/test.out
+	cmake --build build && ./build/test/test.out
 elif [ "$1" = "gtest" ]
 then
 	cmake --build build && ./build/gtest/gtest.out

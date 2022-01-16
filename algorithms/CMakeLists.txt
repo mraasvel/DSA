@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.11)
 project("Algorithms")
 
 # C++ Standard
-set(CMAKE_CXX_STANDARD 11 CACHE STRING "C++ Standard")
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -19,5 +19,5 @@ endif()
 
 add_subdirectory(algorithm)
 add_subdirectory(src)
-add_subdirectory(tests)
-add_subdirectory(gtest)
+add_subdirectory(test)
+# add_subdirectory(gtest)
