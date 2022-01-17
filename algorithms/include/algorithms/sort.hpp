@@ -3,6 +3,7 @@
 #include "sfinae.hpp"
 #include <functional>
 #include <vector>
+#include <iostream> // REMOVE
 
 namespace DSA {
 
@@ -97,23 +98,35 @@ void selectionSort(RandomAccessIt first, RandomAccessIt last) {
 
 	namespace Detail {
 
-	template <typename RandomAccessIt, typename Compare>
-	void merge(RandomAccessIt first, RandomAccessIt midpoint, RandomAccessIt last, Compare comp) {
-		std::vector<typename std::remove_reference<decltype(*first)>::type> left {first, midpoint};
-		std::vector<typename std::remove_reference<decltype(*first)>::type> right {midpoint, last};
-		auto left_it = left.begin();
-		auto right_it = right.begin();
+	template <typename RandomAccessIt, typename Compare, typename Container>
+	void merge(RandomAccessIt first, RandomAccessIt midpoint,
+				RandomAccessIt last, Compare comp,
+				Container& out) {
+		std::copy(first, last, out.begin());
+		auto left = out.begin();
+		auto right = out.begin() + std::distance(first, midpoint);
+		auto left_end = right;
+		auto right_end = right + std::distance(midpoint, last);
 		while (first != last) {
-			if (left_it == left.end()) {
-				*first++ = *right_it++;
-			} else if (right_it == right.end()) {
-				*first++ = *left_it++;
-			} else if (*left_it < *right_it) {
-				*first++ = *left_it++;
+			if (right == right_end || (left != left_end && comp(*left, *right))) {
+				*first++ = *left++;
 			} else {
-				*first++ = *right_it++;
+				*first++ = *right++;
 			}
 		}
+	}
+
+	/*
+	Out is a container that has at least enough space for [first, last) */
+	template <typename RandomAccessIt, typename Compare, typename Container>
+	void mergeSort(RandomAccessIt first, RandomAccessIt last, Compare comp, Container& out) {
+		if (std::distance(first, last) <= 1) {
+			return;
+		}
+		RandomAccessIt midpoint = first + (last - first) / 2;
+		mergeSort(first, midpoint, comp, out);
+		mergeSort(midpoint, last, comp, out);
+		merge(first, midpoint, last, comp, out);
 	}
 
 	}
@@ -127,13 +140,12 @@ Runtime: O(n log n) */
 template <typename RandomAccessIt, typename Compare,
 	RequireRandomAccessIterator<RandomAccessIt> = true>
 void mergeSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
-	if (std::distance(first, last) <= 1) {
+	if (first == last) {
 		return;
 	}
-	RandomAccessIt midpoint = first + (last - first) / 2;
-	mergeSort(first, midpoint, comp);
-	mergeSort(midpoint, last, comp);
-	Detail::merge(first, midpoint, last, comp);
+	using TempContainerType = std::vector<typename std::remove_reference<decltype(*first)>::type>;
+	TempContainerType out (std::distance(first, last));
+	Detail::mergeSort(first, last, comp, out);
 }
 
 template <typename RandomAccessIt>
