@@ -2,8 +2,7 @@
 
 #include "sfinae.hpp"
 #include <functional>
-
-
+#include <vector>
 
 namespace DSA {
 
@@ -94,6 +93,55 @@ void selectionSort(RandomAccessIt first, RandomAccessIt last) {
 		return;
 	}
 	selectionSort(first, last, std::less<decltype(*first)>());
+}
+
+	namespace Detail {
+
+	template <typename RandomAccessIt, typename Compare>
+	void merge(RandomAccessIt first, RandomAccessIt midpoint, RandomAccessIt last, Compare comp) {
+		std::vector<typename std::remove_reference<decltype(*first)>::type> left {first, midpoint};
+		std::vector<typename std::remove_reference<decltype(*first)>::type> right {midpoint, last};
+		auto left_it = left.begin();
+		auto right_it = right.begin();
+		while (first != last) {
+			if (left_it == left.end()) {
+				*first++ = *right_it++;
+			} else if (right_it == right.end()) {
+				*first++ = *left_it++;
+			} else if (*left_it < *right_it) {
+				*first++ = *left_it++;
+			} else {
+				*first++ = *right_it++;
+			}
+		}
+	}
+
+	}
+
+/*
+Log(n) calls, where n is distance(first, last)
+Merge = O(n) where n is distance(first, last)
+1 * n + 2 * n/2 + 4 * n/4 + ... + n * 1 = n * numcalls = n * log(n)
+Runtime: O(n log n) */
+
+template <typename RandomAccessIt, typename Compare,
+	RequireRandomAccessIterator<RandomAccessIt> = true>
+void mergeSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	if (std::distance(first, last) <= 1) {
+		return;
+	}
+	RandomAccessIt midpoint = first + (last - first) / 2;
+	mergeSort(first, midpoint, comp);
+	mergeSort(midpoint, last, comp);
+	Detail::merge(first, midpoint, last, comp);
+}
+
+template <typename RandomAccessIt>
+void mergeSort(RandomAccessIt first, RandomAccessIt last) {
+	if (first == last) {
+		return;
+	}
+	mergeSort(first, last, std::less<decltype(*first)>());
 }
 
 }
