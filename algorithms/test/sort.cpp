@@ -23,7 +23,7 @@ static ContainerType randomContainer(std::size_t n) {
 }
 
 template <typename Sorter>
-static void testSort(Sorter sort) {
+static void testSort(Sorter sorter) {
 	static std::vector<ContainerType> testcases {
 		{},
 		{1},
@@ -35,13 +35,20 @@ static void testSort(Sorter sort) {
 	};
 
 	for (auto testcase : testcases) {
-		sort(testcase.begin(), testcase.end());
+		auto copy {testcase};
+		std::sort(copy.begin(), copy.end());
+		sorter(testcase.begin(), testcase.end());
+		REQUIRE(copy == testcase);
 		REQUIRE(std::is_sorted(testcase.begin(), testcase.end()));
 	}
 }
 
 TEST_CASE("Insertion Sort", "[sort]") {
 	testSort(&DSA::insertionSort<IteratorType>);
+}
+
+TEST_CASE("Recursive Insertion Sort", "[sort]") {
+	testSort(&DSA::recursiveInsertionSort<IteratorType>);
 }
 
 TEST_CASE("Selection Sort", "[sort]") {

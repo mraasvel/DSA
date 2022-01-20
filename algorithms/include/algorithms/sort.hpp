@@ -50,18 +50,39 @@ void insertionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
 	}
 	for (auto x = std::next(first); x != last; ++x) {
 		auto key = *x;
-		auto y = std::prev(x);
-		while (y >= first && comp(key, *y)) {
-			*std::next(y) = *y;
+		auto y = x;
+		while (y > first && comp(key, *std::prev(y))) {
+			*y = *std::prev(y);
 			--y;
 		}
-		*std::next(y) = key;
+		*y = key;
 	}
 }
 
 template <typename RandomAccessIt>
 void insertionSort(RandomAccessIt first, RandomAccessIt last) {
 	insertionSort(first, last, std::less<decltype(*first)>());
+}
+
+template <typename RandomAccessIt, typename Compare,
+	RequireRandomAccessIterator<RandomAccessIt> = true>
+void recursiveInsertionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	if (std::distance(first, last) <= 1) {
+		return;
+	}
+	auto pos = std::prev(last);
+	auto key = *pos;
+	recursiveInsertionSort(first, pos, comp);
+	while (pos > first  && comp(key, *std::prev(pos))) {
+		*pos = *std::prev(pos);
+		--pos;
+	}
+	*pos = key;
+}
+
+template <typename RandomAccessIt>
+void recursiveInsertionSort(RandomAccessIt first, RandomAccessIt last) {
+	recursiveInsertionSort(first, last, std::less<decltype(*first)>());
 }
 
 /*
