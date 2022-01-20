@@ -45,6 +45,9 @@ Termination:
 template <typename RandomAccessIt, typename Compare,
 	RequireRandomAccessIterator<RandomAccessIt> = true>
 void insertionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	if (first == last) {
+		return;
+	}
 	for (auto x = std::next(first); x != last; ++x) {
 		auto key = *x;
 		auto y = std::prev(x);
@@ -58,9 +61,6 @@ void insertionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
 
 template <typename RandomAccessIt>
 void insertionSort(RandomAccessIt first, RandomAccessIt last) {
-	if (first == last) {
-		return;
-	}
 	insertionSort(first, last, std::less<decltype(*first)>());
 }
 
@@ -77,6 +77,9 @@ Runtime complexity: Theta of n squared or O(n^2) */
 template <typename RandomAccessIt, typename Compare,
 	RequireRandomAccessIterator<RandomAccessIt> = true>
 void selectionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	if (first == last) {
+		return;
+	}
 	for (auto i = first; i != last - 1; ++i) {
 		auto min_element = i;
 		for (auto j = i + 1; j != last; ++j) {
@@ -90,9 +93,6 @@ void selectionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
 
 template <typename RandomAccessIt>
 void selectionSort(RandomAccessIt first, RandomAccessIt last) {
-	if (first == last) {
-		return;
-	}
 	selectionSort(first, last, std::less<decltype(*first)>());
 }
 
@@ -140,9 +140,6 @@ Runtime: O(n log n) */
 template <typename RandomAccessIt, typename Compare,
 	RequireRandomAccessIterator<RandomAccessIt> = true>
 void mergeSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
-	if (first == last) {
-		return;
-	}
 	using TempContainerType = std::vector<typename std::remove_reference<decltype(*first)>::type>;
 	TempContainerType out (std::distance(first, last));
 	Detail::mergeSort(first, last, comp, out);
@@ -150,9 +147,6 @@ void mergeSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
 
 template <typename RandomAccessIt>
 void mergeSort(RandomAccessIt first, RandomAccessIt last) {
-	if (first == last) {
-		return;
-	}
 	mergeSort(first, last, std::less<decltype(*first)>());
 }
 
