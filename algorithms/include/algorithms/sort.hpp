@@ -196,5 +196,26 @@ void mergeInsertionSort(RandomAccessIt first, RandomAccessIt last) {
 	mergeInsertionSort(first, last, std::less<decltype(*first)>());
 }
 
+/*
+Sorted subset at the end, swap until you reach the end */
+template <typename RandomAccessIt, typename Compare>
+void bubbleSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	if (first == last) {
+		return;
+	}
+	for (auto x = first; x != last - 1; ++x) {
+		for (auto y = std::prev(last); y != x; --y) {
+			if (comp(*y, *std::prev(y))) {
+				std::swap(*y, *std::prev(y));
+			}
+		}
+	}
+}
+
+template <typename RandomAccessIt>
+void bubbleSort(RandomAccessIt first, RandomAccessIt last) {
+	bubbleSort(first, last, std::less<decltype(*first)>());
+}
+
 
 }

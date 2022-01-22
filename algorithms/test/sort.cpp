@@ -34,12 +34,15 @@ static void testSort(Sorter sorter) {
 		randomContainer(100),
 	};
 
-	for (auto testcase : testcases) {
-		auto copy {testcase};
-		std::sort(copy.begin(), copy.end());
-		sorter(testcase.begin(), testcase.end());
-		REQUIRE(copy == testcase);
-		REQUIRE(std::is_sorted(testcase.begin(), testcase.end()));
+	for (std::size_t i = 0; i < testcases.size(); ++i) {
+		auto testcase = testcases[i];
+		SECTION(std::to_string(i)) {
+			auto copy {testcase};
+			std::sort(copy.begin(), copy.end());
+			sorter(testcase.begin(), testcase.end());
+			REQUIRE(copy == testcase);
+			REQUIRE(std::is_sorted(testcase.begin(), testcase.end()));
+		}
 	}
 }
 
@@ -61,4 +64,8 @@ TEST_CASE("Merge Sort", "[sort]") {
 
 TEST_CASE("Merge Insertion Sort", "[sort]") {
 	testSort(&DSA::mergeInsertionSort<IteratorType>);
+}
+
+TEST_CASE("Bubble Sort", "[sort]") {
+	testSort(&DSA::bubbleSort<IteratorType>);
 }
