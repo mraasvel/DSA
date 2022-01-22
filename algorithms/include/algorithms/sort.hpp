@@ -150,6 +150,18 @@ void selectionSort(RandomAccessIt first, RandomAccessIt last) {
 		merge(first, midpoint, last, comp, out);
 	}
 
+	template <typename RandomAccessIt, typename Compare, typename Container>
+	void mergeInsertionSort(RandomAccessIt first, RandomAccessIt last, Compare comp, Container& out) {
+		constexpr int k = 43;
+		if (std::distance(first, last) <= k) {
+			return insertionSort(first, last, comp);
+		}
+		RandomAccessIt midpoint = first + (last - first) / 2;
+		mergeSort(first, midpoint, comp, out);
+		mergeSort(midpoint, last, comp, out);
+		merge(first, midpoint, last, comp, out);
+	}
+
 	}
 
 /*
@@ -170,5 +182,19 @@ template <typename RandomAccessIt>
 void mergeSort(RandomAccessIt first, RandomAccessIt last) {
 	mergeSort(first, last, std::less<decltype(*first)>());
 }
+
+template <typename RandomAccessIt, typename Compare,
+	RequireRandomAccessIterator<RandomAccessIt> = true>
+void mergeInsertionSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	using TempContainerType = std::vector<typename std::remove_reference<decltype(*first)>::type>;
+	TempContainerType out (std::distance(first, last));
+	Detail::mergeInsertionSort(first, last, comp, out);
+}
+
+template <typename RandomAccessIt>
+void mergeInsertionSort(RandomAccessIt first, RandomAccessIt last) {
+	mergeInsertionSort(first, last, std::less<decltype(*first)>());
+}
+
 
 }

@@ -58,3 +58,7 @@ TEST_CASE("Selection Sort", "[sort]") {
 TEST_CASE("Merge Sort", "[sort]") {
 	testSort(&DSA::mergeSort<IteratorType>);
 }
+
+TEST_CASE("Merge Insertion Sort", "[sort]") {
+	testSort(&DSA::mergeInsertionSort<IteratorType>);
+}
