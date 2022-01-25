@@ -16,7 +16,6 @@ void printC(const C& c) {
 int main() {
 	std::vector<int> v {5, 2, 4, 6, 1, 3};
 	DSA::insertionSort(v.begin(), v.end());
-	std::cout << "5! = " << DSA::Factorial(5) << std::endl;
 	std::cout << "Is sorted: " << std::boolalpha << std::is_sorted(v.begin(), v.end()) << std::endl;
 	printC(v);
 	DSA::insertionSort(v.begin(), v.end(), std::greater<int>());

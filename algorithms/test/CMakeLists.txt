@@ -5,6 +5,7 @@ set(EXEC "test.out")
 add_executable("${EXEC}"
 	main.cpp
 	sort.cpp
+	maxsubarray.cpp
 )
 
 target_link_libraries("${EXEC}" PUBLIC "alg")

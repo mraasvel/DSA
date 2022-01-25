@@ -4,6 +4,4 @@
 
 namespace DSA {
 
-int Factorial(int n);
-
 }
