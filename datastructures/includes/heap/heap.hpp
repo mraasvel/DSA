@@ -1,10 +1,24 @@
 #ifndef HEAP_HPP
 #define HEAP_HPP
 
+#include "sfinae.hpp"
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 namespace DSA {
+
+template <class RandomIt, class Compare,
+	RequireRandomAccessIterator<RandomIt> = true>
+void make_heap(RandomIt first, RandomIt last,
+				Compare comp) {
+	
+}
+
+template <class RandomIt>
+void make_heap(RandomIt first, RandomIt last) {
+	make_heap(first, last, std::less<decltype(*first)>());
+}
 
 template <
 	typename T,
@@ -16,12 +30,126 @@ public:
 	static_assert(std::is_same<T, typename Container::value_type>::value, "invalid container");
 public:
 	using container_type	= Container;
-	using compare_type		= Compare;
+	using value_compare		= Compare;
 	using value_type		= typename Container::value_type;
+	using size_type			= typename Container::size_type;
 	using reference			= typename Container::reference;
 	using const_reference	= typename Container::const_reference;
-	using size_type			= typename Container::size_type;
+
 public:
+	Heap()
+	: Heap(Compare(), Container()) {}
+	explicit Heap(const Compare& compare)
+	: Heap(compare, Container()) {}
+
+	Heap(const Compare& compare, const Container& cont)
+	: comp(compare), c(cont) {
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	Heap(const Compare& compare,Container&& cont)
+	: comp(compare), c(std::move(cont)) {
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	Heap(const Heap& other) = default;
+	Heap(Heap&& other) = default;
+
+	template <class InputIt,
+		RequireInputIterator<InputIt> = true>
+	Heap(InputIt first, InputIt last,
+			const Compare& compare = Compare())
+	: comp(compare), c(first, last) {
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	template <class InputIt,
+		RequireInputIterator<InputIt> = true>
+	Heap(InputIt first, InputIt last,
+		const Compare& compare, const Container& cont)
+	: comp(compare), c(cont) {
+		c.insert(c.end(), first, last);
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	template <class InputIt,
+		RequireInputIterator<InputIt> = true>
+	Heap(InputIt first, InputIt last,
+		const Compare& compare, Container&& cont)
+	: comp(compare), c(std::move(cont)) {
+		c.insert(c.end(), first, last);
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	template <class Alloc>
+	explicit Heap(const Alloc& alloc)
+	: Heap(Compare(), alloc) {}
+
+	template <class Alloc,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(const Compare& compare, const Alloc& alloc)
+	: comp(compare), c(alloc) {}
+
+	template <class Alloc,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(const Compare& compare, const Container& cont,
+		const Alloc& alloc)
+	: comp(compare), c(cont, alloc) {
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	template <class Alloc,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(const Compare& compare, Container&& cont,
+		const Alloc& alloc)
+	: comp(compare), c(std::move(cont), alloc) {
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	template <class Alloc,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(const Heap& other, const Alloc& alloc)
+	: comp(other.comp), c(other.c, alloc) {}
+
+	template <class Alloc,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(Heap&& other, const Alloc& alloc)
+	: comp(std::move(other.comp)), c(std::move(other.c), alloc) {}
+
+	template <class InputIt, class Alloc,
+		RequireInputIterator<InputIt> = true,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(InputIt first, InputIt last, const Compare& compare,
+		const Alloc& alloc)
+	: comp(compare), c(first, last, alloc) {
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	template <class InputIt, class Alloc,
+		RequireInputIterator<InputIt> = true,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(InputIt first, InputIt last, const Compare& compare,
+		const Container& cont, const Alloc& alloc)
+	: comp(compare), c(cont, alloc) {
+		c.insert(c.end(), first, last);
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	template <class InputIt, class Alloc,
+		RequireInputIterator<InputIt> = true,
+		RequireAllocator<container_type, Alloc> = true>
+	Heap(InputIt first, InputIt last, const Compare& compare,
+		Container&& cont, const Alloc& alloc)
+	: comp(compare), c(std::move(cont), alloc) {
+		c.insert(c.end(), first, last);
+		std::make_heap(c.begin(), c.end(), comp);
+	}
+
+	~Heap() {}
+
+	Heap& operator=(const Heap& other) = default;
+	Heap& operator=(Heap&& other) = default;
+
 	const_reference top() const {
 		return c.front();
 	}
@@ -37,36 +165,33 @@ public:
 	void push(const value_type& v) {
 		c.push_back(v);
 		heapifyUp();
+		// std::push_heap(c.begin(), c.end(), comp);
 	}
 
 	void push(value_type&& v) {
 		c.push_back(std::move(v));
 		heapifyUp();
+		// std::push_heap(c.begin(), c.end(), comp);
 	}
 
 	template <typename... Args>
 	void emplace(Args&&... args) {
 		c.emplace_back(std::forward<Args>(args)...);
 		heapifyUp();
+		// std::push_heap(c.begin(), c.end(), comp);
 	}
 
 	void pop() {
 		std::swap(c.front(), c.back());
 		c.pop_back();
 		heapifyDown();
+		// std::pop_heap(c.begin(), c.end(), comp);
+		// c.pop_back();
 	}
 
-	void swap(Heap& other) {
+	void swap(Heap& other) noexcept {
 		std::swap(c, other.c);
 		std::swap(comp, other.comp);
-	}
-
-	void print() const {
-		std::cout << "HEAP:";
-		for (const auto& v : c) {
-			std::cout << ' ' << v;
-		}
-		std::cout << std::endl;
 	}
 
 private:
@@ -125,11 +250,20 @@ Utils */
 		return !(comp(a, b));
 	}
 
-private:
+protected:
+	value_compare comp;
 	container_type c;
-	compare_type comp;
 };
 
+}
+
+namespace std {
+
+template <class T, class Container, class Compare>
+void swap(  DSA::Heap<T, Container, Compare>& lhs,
+			DSA::Heap<T, Container, Compare>& rhs) {
+	lhs.swap(rhs);
+}
 
 }
 
