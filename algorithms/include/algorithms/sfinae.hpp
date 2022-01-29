@@ -23,6 +23,10 @@ template <typename InputIterator>
 using RequireInputIterator =
 	Detail::RequireIterator<InputIterator, std::input_iterator_tag>;
 
+template <typename ForwardIterator>
+using RequireForwardIterator =
+	Detail::RequireIterator<ForwardIterator, std::forward_iterator_tag>;
+
 template <typename BidirectionalIterator>
 using RequireBidirectionalIterator =
 	Detail::RequireIterator<BidirectionalIterator, std::bidirectional_iterator_tag>;

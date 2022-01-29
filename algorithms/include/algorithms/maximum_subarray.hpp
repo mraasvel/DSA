@@ -53,4 +53,36 @@ int maximumSubarray(BidirectionalIterator first, BidirectionalIterator last) {
 	return std::max(std::max(left, right), cross);
 }
 
+template <typename ForwardIterator,
+		DSA::RequireForwardIterator<ForwardIterator> = true>
+int maximumSubarrayBF(ForwardIterator first, ForwardIterator last) {
+	int maxsum = std::numeric_limits<int>::min();
+	for (auto it = first; it != last; ++it) {
+		int sum = 0;
+		for (auto jt = it; jt != last; ++jt) {
+			sum += *jt;
+			maxsum = std::max(maxsum, sum);
+		}
+	}
+	return maxsum;
+}
+
+template <typename ForwardIterator,
+		DSA::RequireForwardIterator<ForwardIterator> = true>
+int maximumSubarrayLinear(ForwardIterator first, ForwardIterator last) {
+	int left = std::numeric_limits<int>::min();
+	int right;
+	int cross = 0;
+	while (first != last) {
+		// Right max subarray is always of size 1
+		right = *first;
+		cross += right;
+		left = std::max(std::max(left, right), cross);
+		// Ensures that if cross is negative, right is always the new maximum cross
+		cross = std::max(cross, right);
+		++first;
+	}
+	return left;
+}
+
 }

@@ -2,6 +2,8 @@ set(EXEC "a.out")
 
 add_executable("${EXEC}"
 	main.cpp
+	timer.cpp
+	random_range.cpp
 )
 
 # Library
