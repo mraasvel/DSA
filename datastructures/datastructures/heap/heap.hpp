@@ -8,16 +8,71 @@
 
 namespace DSA {
 
+	namespace HeapDetail {
+	
+	std::size_t parentIndex(std::size_t index);
+	std::size_t leftChildIndex(std::size_t index);
+	std::size_t rightChildIndex(std::size_t index);
+
+	}
+
 template <class RandomIt, class Compare,
 	RequireRandomAccessIterator<RandomIt> = true>
-void make_heap(RandomIt first, RandomIt last,
-				Compare comp) {
+void make_heap(RandomIt first, RandomIt last, Compare comp) {
 	
 }
 
 template <class RandomIt>
 void make_heap(RandomIt first, RandomIt last) {
 	make_heap(first, last, std::less<decltype(*first)>());
+}
+
+template <class RandomIt, class Compare,
+	RequireRandomAccessIterator<RandomIt> = true>
+void push_heap(RandomIt first, RandomIt last, Compare comp) {
+	std::size_t index = std::distance(first, last) - 1;
+	std::size_t parent = HeapDetail::parentIndex(index);
+	while (index != 0 && comp(first[parent], first[index])) {
+		std::swap(first[index], first[parent]);
+		index = parent;
+		parent = HeapDetail::parentIndex(index);
+	}
+}
+
+template <class RandomIt>
+void push_heap(RandomIt first, RandomIt last) {
+	push_heap(first, last, std::less<decltype(*first)>());
+}
+
+template <class RandomIt, class Compare,
+	RequireRandomAccessIterator<RandomIt> = true>
+void pop_heap(RandomIt first, RandomIt last, Compare comp) {
+	std::size_t size = std::distance(first, last) - 1;
+	std::swap(first[0], first[size]);
+	std::size_t index = 0;
+	while (index < size) {
+		std::size_t left = HeapDetail::leftChildIndex(index);
+		std::size_t right = HeapDetail::rightChildIndex(index);
+		// if index is a leaf or greater than all it's children
+		if (left >= size ||
+				(comp(first[left], first[index])
+					&& (right >= size || comp(first[right], first[index])))) {
+			break;
+		}
+		// if left is greater than right or only left exists, swap left
+		if (right >= size || comp(first[right], first[left])) {
+			std::swap(first[index], first[left]);
+			index = left;
+		} else if (right < size) {
+			std::swap(first[index], first[right]);
+			index = right;
+		}
+	}
+}
+
+template <class RandomIt>
+void pop_heap(RandomIt first, RandomIt last) {
+	pop_heap(first, last, std::less<decltype(*first)>());
 }
 
 template <
@@ -36,6 +91,9 @@ public:
 	using reference			= typename Container::reference;
 	using const_reference	= typename Container::const_reference;
 
+	using iterator			= typename Container::iterator;
+	using const_iterator	= typename Container::const_iterator;
+
 public:
 	Heap()
 	: Heap(Compare(), Container()) {}
@@ -44,12 +102,12 @@ public:
 
 	Heap(const Compare& compare, const Container& cont)
 	: comp(compare), c(cont) {
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	Heap(const Compare& compare,Container&& cont)
 	: comp(compare), c(std::move(cont)) {
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	Heap(const Heap& other) = default;
@@ -60,7 +118,7 @@ public:
 	Heap(InputIt first, InputIt last,
 			const Compare& compare = Compare())
 	: comp(compare), c(first, last) {
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	template <class InputIt,
@@ -69,7 +127,7 @@ public:
 		const Compare& compare, const Container& cont)
 	: comp(compare), c(cont) {
 		c.insert(c.end(), first, last);
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	template <class InputIt,
@@ -78,7 +136,7 @@ public:
 		const Compare& compare, Container&& cont)
 	: comp(compare), c(std::move(cont)) {
 		c.insert(c.end(), first, last);
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	template <class Alloc>
@@ -95,7 +153,7 @@ public:
 	Heap(const Compare& compare, const Container& cont,
 		const Alloc& alloc)
 	: comp(compare), c(cont, alloc) {
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	template <class Alloc,
@@ -103,7 +161,7 @@ public:
 	Heap(const Compare& compare, Container&& cont,
 		const Alloc& alloc)
 	: comp(compare), c(std::move(cont), alloc) {
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	template <class Alloc,
@@ -122,7 +180,7 @@ public:
 	Heap(InputIt first, InputIt last, const Compare& compare,
 		const Alloc& alloc)
 	: comp(compare), c(first, last, alloc) {
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	template <class InputIt, class Alloc,
@@ -132,7 +190,7 @@ public:
 		const Container& cont, const Alloc& alloc)
 	: comp(compare), c(cont, alloc) {
 		c.insert(c.end(), first, last);
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	template <class InputIt, class Alloc,
@@ -142,7 +200,7 @@ public:
 		Container&& cont, const Alloc& alloc)
 	: comp(compare), c(std::move(cont), alloc) {
 		c.insert(c.end(), first, last);
-		std::make_heap(c.begin(), c.end(), comp);
+		makeHeap();
 	}
 
 	~Heap() {}
@@ -150,6 +208,27 @@ public:
 	Heap& operator=(const Heap& other) = default;
 	Heap& operator=(Heap&& other) = default;
 
+/*
+Iterators */
+
+	iterator begin() {
+		return c.begin();
+	}
+
+	const_iterator begin() const {
+		return c.cbegin();
+	}
+
+	iterator end() {
+		return c.end();
+	}
+
+	const_iterator end() const {
+		return c.cend();
+	}
+
+/*
+Priority Queue functions */
 	const_reference top() const {
 		return c.front();
 	}
@@ -165,28 +244,21 @@ public:
 	void push(const value_type& v) {
 		c.push_back(v);
 		heapifyUp();
-		// std::push_heap(c.begin(), c.end(), comp);
 	}
 
 	void push(value_type&& v) {
 		c.push_back(std::move(v));
 		heapifyUp();
-		// std::push_heap(c.begin(), c.end(), comp);
 	}
 
 	template <typename... Args>
 	void emplace(Args&&... args) {
 		c.emplace_back(std::forward<Args>(args)...);
 		heapifyUp();
-		// std::push_heap(c.begin(), c.end(), comp);
 	}
 
 	void pop() {
-		std::swap(c.front(), c.back());
-		c.pop_back();
 		heapifyDown();
-		// std::pop_heap(c.begin(), c.end(), comp);
-		// c.pop_back();
 	}
 
 	void swap(Heap& other) noexcept {
@@ -194,60 +266,21 @@ public:
 		std::swap(comp, other.comp);
 	}
 
+	value_compare value_comp() const {
+		return comp;
+	}
+
 private:
+	void makeHeap() {
+		std::make_heap(c.begin(), c.end(), comp);
+	}
 	void heapifyUp() {
-		// bubble up
-		size_type index = c.size() - 1;
-		size_type parent = parentIndex(index);
-		while (index != 0 && greater(c[index], c[parent])) {
-			std::swap(c[index], c[parent]);
-			index = parent;
-			parent = parentIndex(index);
-		}
+		DSA::push_heap(c.begin(), c.end(), comp);
 	}
 
 	void heapifyDown() {
-		size_type index = 0;
-		// bubble down: swap with the largest child
-		while (true) {
-			auto left = leftChildIndex(index);
-			auto right = rightChildIndex(index);
-			// Condition: no children or current node is already greater than it's children
-			if (left >= size() ||
-				(greater(c[index], c[left]) &&
-				(right >= size() || greater(c[index], c[right])))
-			) {
-				break;
-			} else if (right >= size() || greater(c[left], c[right])) {
-				std::swap(c[index], c[left]);
-				index = left;
-			} else {
-				std::swap(c[index], c[right]);
-				index = right;
-			}
-		}
-	}
-
-/*
-Utils */
-	size_type parentIndex(size_type index) const {
-		return (index - 1) / 2;
-	}
-
-	size_type leftChildIndex(size_type index) const {
-		return index * 2 + 1;
-	}
-
-	size_type rightChildIndex(size_type index) const {
-		return index * 2 + 2;
-	}
-
-	bool greater(const value_type& a, const value_type& b) const {
-		return comp(b, a);
-	}
-
-	bool greaterEqual(const value_type& a, const value_type& b) const {
-		return !(comp(a, b));
+		DSA::pop_heap(c.begin(), c.end(), comp);
+		c.pop_back();
 	}
 
 protected:

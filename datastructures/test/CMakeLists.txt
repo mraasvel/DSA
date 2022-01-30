@@ -3,11 +3,11 @@
 set(EXEC "test.out")
 
 add_executable("${EXEC}"
-	catch_main.cpp
-	catch_heap.cpp
-	catch_list.cpp
-	catch_red_black_tree_tests.cpp
-	catch_temp.cpp
+	main.cpp
+	heap.cpp
+	list.cpp
+	RBT.cpp
+	temp.cpp
 	Testing/missing.cpp
 )
 
