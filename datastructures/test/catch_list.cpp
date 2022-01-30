@@ -9,7 +9,7 @@
 
 using namespace Testing;
 
-using Type = size_t;
+using Type = ssize_t;
 using CompoundType = std::vector<std::vector<int>>;
 template <typename T>
 using List = DS::list<T>;
