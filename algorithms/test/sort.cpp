@@ -69,3 +69,7 @@ TEST_CASE("Merge Insertion Sort", "[sort]") {
 TEST_CASE("Bubble Sort", "[sort]") {
 	testSort(&DSA::bubbleSort<IteratorType>);
 }
+
+TEST_CASE("Heap Sort", "[sort]") {
+	testSort(&DSA::heapSort<IteratorType>);
+}

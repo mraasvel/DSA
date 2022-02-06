@@ -4,6 +4,7 @@
 #include <functional>
 #include <vector>
 #include <iostream> // REMOVE
+#include <algorithm>
 
 namespace DSA {
 
@@ -198,7 +199,8 @@ void mergeInsertionSort(RandomAccessIt first, RandomAccessIt last) {
 
 /*
 Sorted subset at the end, swap until you reach the end */
-template <typename RandomAccessIt, typename Compare>
+template <typename RandomAccessIt, typename Compare,
+	RequireRandomAccessIterator<RandomAccessIt> = true>
 void bubbleSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
 	if (first == last) {
 		return;
@@ -217,5 +219,39 @@ void bubbleSort(RandomAccessIt first, RandomAccessIt last) {
 	bubbleSort(first, last, std::less<decltype(*first)>());
 }
 
+/*
+std::make_heap O(n) time 
+std::pop_heap O(log n) time n times
+so complexity O(n log n)
+in-place so space complexity is O(1)
+
+make_heap and pop_heap are implemented in DSA/datastructures/datastructures/heap
+
+Loop invariant:
+	- [first, last) is a max heap
+	- Each iteration puts the largest element in [first, last) at the front of the sorted subset at the end
+
+In the first iteration [first, last) is a heap and the sorted subset after last is empty
+The top of the heap (MAX) is put at the position *(last - 1) which is now the sorted subset at the end of size 1
+The heap is reheapified and last is decremented causing the first invariant to be true for the next iteration.
+*/
+template <typename RandomAccessIt, typename Compare,
+	RequireRandomAccessIterator<RandomAccessIt> = true>
+void heapSort(RandomAccessIt first, RandomAccessIt last, Compare comp) {
+	// Construct a binary max-heap in O(n) time
+	std::make_heap(first, last, comp);
+	// Iterate O(n) times
+	while (last != first) {
+		// O(log n)
+		// Puts the largest element at the last position of the sorted subsets and the next largest element at the front
+		std::pop_heap(first, last);
+		--last;
+	}
+}
+
+template <typename RandomAccessIt>
+void heapSort(RandomAccessIt first, RandomAccessIt last) {
+	heapSort(first, last, std::less<decltype(*first)>());
+}
 
 }

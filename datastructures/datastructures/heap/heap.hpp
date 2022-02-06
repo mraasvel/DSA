@@ -14,12 +14,43 @@ namespace DSA {
 	std::size_t leftChildIndex(std::size_t index);
 	std::size_t rightChildIndex(std::size_t index);
 
+	template <typename RandomIt, typename Compare>
+	void heapifyDown(RandomIt first, RandomIt last, Compare comp, std::size_t index) {
+		std::size_t size = std::distance(first, last) - 1;
+		while (index < size) {
+			std::size_t left = HeapDetail::leftChildIndex(index);
+			std::size_t right = HeapDetail::rightChildIndex(index);
+			// if index is a leaf or greater than all it's children
+			if (left >= size ||
+					(comp(first[left], first[index])
+						&& (right >= size || comp(first[right], first[index])))) {
+				break;
+			}
+			// if left is greater than right or only left exists, swap left
+			if (right >= size || comp(first[right], first[left])) {
+				std::swap(first[index], first[left]);
+				index = left;
+			} else if (right < size) {
+				std::swap(first[index], first[right]);
+				index = right;
+			}
+		}
+	}
+
 	}
 
 template <class RandomIt, class Compare,
 	RequireRandomAccessIterator<RandomIt> = true>
 void make_heap(RandomIt first, RandomIt last, Compare comp) {
-	
+	if (first == last) {
+		return;
+	}
+	std::size_t size = std::distance(first, last) - 1;
+	std::size_t index = HeapDetail::parentIndex(size);
+	while (index <= size) {
+		HeapDetail::heapifyDown(first, last, comp, index);
+		--index;
+	}
 }
 
 template <class RandomIt>
@@ -47,27 +78,8 @@ void push_heap(RandomIt first, RandomIt last) {
 template <class RandomIt, class Compare,
 	RequireRandomAccessIterator<RandomIt> = true>
 void pop_heap(RandomIt first, RandomIt last, Compare comp) {
-	std::size_t size = std::distance(first, last) - 1;
-	std::swap(first[0], first[size]);
-	std::size_t index = 0;
-	while (index < size) {
-		std::size_t left = HeapDetail::leftChildIndex(index);
-		std::size_t right = HeapDetail::rightChildIndex(index);
-		// if index is a leaf or greater than all it's children
-		if (left >= size ||
-				(comp(first[left], first[index])
-					&& (right >= size || comp(first[right], first[index])))) {
-			break;
-		}
-		// if left is greater than right or only left exists, swap left
-		if (right >= size || comp(first[right], first[left])) {
-			std::swap(first[index], first[left]);
-			index = left;
-		} else if (right < size) {
-			std::swap(first[index], first[right]);
-			index = right;
-		}
-	}
+	std::swap(*first, *(last - 1));
+	HeapDetail::heapifyDown(first, last, comp, 0);
 }
 
 template <class RandomIt>
@@ -272,7 +284,7 @@ Priority Queue functions */
 
 private:
 	void makeHeap() {
-		std::make_heap(c.begin(), c.end(), comp);
+		DSA::make_heap(c.begin(), c.end(), comp);
 	}
 	void heapifyUp() {
 		DSA::push_heap(c.begin(), c.end(), comp);
