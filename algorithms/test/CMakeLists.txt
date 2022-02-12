@@ -6,6 +6,7 @@ add_executable("${EXEC}"
 	main.cpp
 	sort.cpp
 	maxsubarray.cpp
+	matrix.cpp
 )
 
 target_link_libraries("${EXEC}" PUBLIC "alg")
